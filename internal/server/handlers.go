@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 )
 
@@ -11,6 +12,8 @@ var (
 )
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
+	// Get the tmpl from request context
+	tmpl := r.Context().Value("template").(*template.Template)
 	if r.URL.Path != "/" {
 		SendErrorResponse(w, http.StatusNotFound, ErrNotFound)
 		return
@@ -20,7 +23,14 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.ServeFile(w, r, "templates/index.html")
+	data := map[string]string{
+		"data": "Hello, Good morning",
+	}
+
+	if err := tmpl.ExecuteTemplate(w, "index", data); err != nil {
+		SendErrorResponse(w, http.StatusInternalServerError, err)
+		return
+	}
 }
 
 // HealthHandler handles the API healthz params.

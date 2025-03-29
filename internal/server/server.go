@@ -2,6 +2,8 @@ package server
 
 import (
 	"fmt"
+	"html/template"
+	"log"
 	"net/http"
 
 	"github.com/sounishnath003/practice-leetcode-multiplayer/internal/core"
@@ -22,4 +24,11 @@ func (s *Server) StartServer() error {
 
 	s.Co.Lo.Printf("trying to start the server on http://0.0.0.0:%d\n", s.Co.Port)
 	return http.ListenAndServe(fmt.Sprintf(":%d", s.Co.Port), DefaultMiddlwareTracker(srv))
+}
+
+// ParseTemplates parses all template files in the specified directory and returns a compiled template.
+func ParseTemplates(templateDirPattern string) (*template.Template, error) {
+	log.Printf("parsing the templates from template directory %s", templateDirPattern)
+	tmpl, err := template.ParseGlob(templateDirPattern)
+	return tmpl, err
 }
