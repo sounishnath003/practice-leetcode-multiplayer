@@ -5,7 +5,7 @@ tmp_dir = "tmp"
 [build]
   args_bin = []
   bin = "./bin/practice_leetcode_multiplayer"
-  cmd = "go build -o ./bin/practice_leetcode_multiplayer ."
+  cmd = "CGO_ENABLED=0 go build -o ./bin/practice_leetcode_multiplayer ."
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor", "testdata"]
   exclude_file = []

@@ -1,9 +1,24 @@
 package main
 
-import "log"
+import (
+	"log"
+
+	"github.com/sounishnath003/practice-leetcode-multiplayer/internal/core"
+	"github.com/sounishnath003/practice-leetcode-multiplayer/internal/server"
+	"github.com/sounishnath003/practice-leetcode-multiplayer/internal/utils"
+)
 
 func main() {
-	for i := 0; i < 10; i++ {
-		log.Println("Hello world!", "value", i)
+
+	co := core.Core{
+		Port: utils.GetNumberFromEnv("PORT", 3000),
+		Lo:   log.Default(),
 	}
+
+	// Init the server
+	srv := server.Server{
+		Co: &co,
+	}
+
+	panic(srv.StartServer())
 }
