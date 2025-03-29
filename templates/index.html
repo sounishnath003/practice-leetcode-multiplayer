@@ -1,4 +1,4 @@
-{{ block "index" . }}
+{{ block "Index" . }}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -20,7 +20,7 @@
 <body>
     <div class="flex flex-row justify-between items-center p-1 bg-gray-100 dark:bg-gray-800 px-4 gap-4 dark:text-white">
         <!-- Logo and Menu button -->
-        <div class="text-sm md:text-xl font-medium cursor-pointer">Practice Leetcode Multiplayer</div>
+        <div class="text-sm md:text-xl font-medium cursor-pointer"> {{.Title}} </div>
         <!-- Search Questions input box -->
         <div class="w-[600px]">
             <input type="text" id="search_question"
@@ -28,14 +28,21 @@
                 placeholder="Type questions and hit enter" required />
         </div>
         <!-- Choose language options -->
-        <div class="text-sm font-mediumn cursor-pointer">Python</div>
+
+        <select id="programmingLanguages"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+            {{ range .SupportedProgrammingLangs }}
+            <option value="{{ . }}"> {{.}} </option>
+            {{ end }}
+        </select>
     </div>
 
     <!-- Main Section area -->
-    <div class="flex flex-items items-center justify-between dark:bg-gray-900 bg-gray-50 min-h-screen px-2">
+    <div
+        class="flex flex-items items-center justify-between dark:bg-gray-900 bg-gray-50 min-h-screen px-2 dark:text-white">
         <div>1</div>
         <div>
-            {{ . }}
+            {{ .Message }}
         </div>
         <div>3
             <button hx-get="/api/healthz" hx-swap="outerHTML">

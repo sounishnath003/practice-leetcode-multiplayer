@@ -23,11 +23,14 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := map[string]string{
-		"data": "Hello, Good morning",
+	// Setting up the data
+	data := IndexPageData{
+		Title:                     "Practice Leetcode Multiplayer",
+		SupportedProgrammingLangs: []string{"Python", "Java", "Javascript"},
+		Message:                   "Hello Sounish, Welcome to the Leetcode Practice Problems",
 	}
 
-	if err := tmpl.ExecuteTemplate(w, "index", data); err != nil {
+	if err := tmpl.ExecuteTemplate(w, "Index", data); err != nil {
 		SendErrorResponse(w, http.StatusInternalServerError, err)
 		return
 	}
