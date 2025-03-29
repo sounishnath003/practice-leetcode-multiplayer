@@ -1,5 +1,4 @@
 {{ block "CodeBox" . }}
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"
     integrity="sha512-8RnEqURPUc5aqFEN04aQEiPlSAdE0jlFS/9iGgUyNtwFnSKCXhmB6ZTNl7LnDtDWKabJIASzXrzD0K+LYexU9g=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -30,8 +29,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/hint/anyword-hint.min.js"
     integrity="sha512-wdYOcbX/zcS4tP3HEDTkdOI5UybyuRxJMQzDQIRcafRLY/oTDWyXO+P8SzuajQipcJXkb2vHcd1QetccSFAaVw=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
-
 
 
 <textarea name="codebox" id="codebox" wrap="soft"
@@ -65,6 +62,7 @@
         smartIndent: true,
         moveOnDrag: true,
         autoCloseTags: true,
+        autoCloseBrackets: true,
         lineWrapping: true,
         matchBrackets: true,
         foldGutter: true,
