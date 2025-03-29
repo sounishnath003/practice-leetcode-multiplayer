@@ -5,14 +5,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Practice Leetcode Multiplayer</title>
+    <!-- css and fonts -->
+    <link rel="stylesheet" href="styles/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&display=swap" rel="stylesheet">
+    <!-- js scripts -->
     <script defer src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
 
 <body>
-    <!-- have a button POST a click via AJAX -->
-    <button hx-post="/clicked" hx-swap="outerHTML">
-        Click Me
-    </button>
+
+    <div class="flex flex-row justify-between items-center p-1 bg-gray-100 dark:bg-gray-800 px-4 gap-4 dark:text-white">
+        <!-- Logo and Menu button -->
+        <div class="text-sm md:text-xl font-medium cursor-pointer">Practice Leetcode Multiplayer</div>
+        <!-- Search Questions input box -->
+        <div class="w-[600px]">
+            <input type="text" id="search_question"
+                class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                placeholder="Type questions and hit enter" required />
+        </div>
+        <!-- Choose language options -->
+        <div class="text-sm font-mediumn cursor-pointer">Python</div>
+    </div>
+
+    <!-- Main Section area -->
+    <div class="flex flex-items items-center justify-between dark:bg-gray-900 bg-gray-50 min-h-screen px-2">
+        <div>1</div>
+        <div>3
+            <button hx-get="/api/healthz" hx-swap="outerHTML">
+                Click Me
+            </button>
+
+        </div>
+    </div>
+    <!-- Main Section area -->
+
 </body>
 
 </html>

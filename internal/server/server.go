@@ -16,6 +16,7 @@ func (s *Server) StartServer() error {
 	srv := http.NewServeMux()
 
 	// Add routes
+	srv.HandleFunc("GET /", IndexHandler)
 	srv.HandleFunc("GET /api/healthz", MiddlewareChain(HealthHandler, LoggerMiddleware()))
 	srv.HandleFunc("GET /api/search", MiddlewareChain(SearchQuestionHandler, LoggerMiddleware()))
 
