@@ -43,11 +43,22 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 
 // SearchQuestionHandler
 func SearchQuestionHandler(w http.ResponseWriter, r *http.Request) {
-	question_slug := r.URL.Query().Get("query")
+	// Get the template from  context
+	tmpl := r.Context().Value("template").(*template.Template)
+
+	question_slug := r.FormValue("searchQuestion")
+
 	// When slug are not provided nicely
 	if len(question_slug) == 0 {
 		SendErrorResponse(w, http.StatusBadRequest, ErrorSlug)
 		return
 	}
-	SendJSONResponse(w, http.StatusOK, question_slug)
+	data := map[string]string{
+		"Title": question_slug,
+	}
+
+	if err := tmpl.ExecuteTemplate(w, "QuestionBlock", data); err != nil {
+		SendErrorResponse(w, http.StatusInternalServerError, err)
+		return
+	}
 }

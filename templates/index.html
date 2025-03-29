@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Practice Leetcode Multiplayer</title>
     <!-- css and fonts -->
-    <link rel="stylesheet" href="styles/style.css">
+    <link rel="stylesheet" href="/static/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&display=swap" rel="stylesheet">
@@ -22,9 +22,14 @@
         <!-- Logo and Menu button -->
         <div class="text-sm md:text-xl font-medium cursor-pointer"> {{.Title}} </div>
         <!-- Search Questions input box -->
+        <span class="htmx-indicator">
+            Searching...
+        </span>
         <div class="w-[600px]">
-            <input type="text" id="search_question"
-                class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+            <input type="search" id="searchQuestion" name="searchQuestion" hx-post="/api/search"
+                hx-trigger="input changed delay:500ms, keyup[key=='Enter'], load" hx-target="#questionBlock"
+                hx-indicator=".htmx-indicator"
+                class="form-control w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                 placeholder="Type questions and hit enter" required />
         </div>
         <!-- Choose language options -->
@@ -40,11 +45,10 @@
     <!-- Main Section area -->
     <div
         class="flex flex-items items-center justify-between dark:bg-gray-900 bg-gray-50 min-h-screen px-2 dark:text-white">
-        <div>1</div>
-        <div>
-            {{ .Message }}
+        <div class="border-r h-screen min-w-[550px]">
+            {{ template "QuestionBlock" }}
         </div>
-        <div>3
+        <div>
             <button hx-get="/api/healthz" hx-swap="outerHTML">
                 Click Me
             </button>

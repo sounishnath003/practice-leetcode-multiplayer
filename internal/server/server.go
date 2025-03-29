@@ -20,7 +20,11 @@ func (s *Server) StartServer() error {
 	// Add routes
 	srv.HandleFunc("GET /", IndexHandler)
 	srv.HandleFunc("GET /api/healthz", MiddlewareChain(HealthHandler, LoggerMiddleware()))
-	srv.HandleFunc("GET /api/search", MiddlewareChain(SearchQuestionHandler, LoggerMiddleware()))
+	srv.HandleFunc("POST /api/search", MiddlewareChain(SearchQuestionHandler, LoggerMiddleware()))
+
+	// Serve the static assets
+	staticFileServer := http.FileServer(http.Dir("./templates"))
+	srv.Handle("GET /static/", http.StripPrefix("/static/", staticFileServer))
 
 	s.Co.Lo.Printf("trying to start the server on http://0.0.0.0:%d\n", s.Co.Port)
 	return http.ListenAndServe(fmt.Sprintf(":%d", s.Co.Port), DefaultMiddlwareTracker(srv))
