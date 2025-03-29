@@ -1,7 +1,30 @@
 {{block "QuestionBlock" . }}
 
-<div id="questionBlock" class="dark:bg-gray-800 dark:text-white font-mono">
-    <h2 class="text-4xl"> {{.Title}} </h2>
+<div id="questionBlock"
+    class="flex flex-col gap-4 dark:bg-gray-800 dark:text-white font-mono max-w-[600px] overflow-y-scroll my-2">
+    <div class="text-3xl font-medium text-gray-800"> {{ .Title}} </div>
+    <div class="flex flex-items gap-4 text-md">
+
+        {{if eq .Difficulty "Easy"}}
+        <div class="text-md bg-green-100 text-green-700 px-2 rounded-lg dark:bg-gray-700">
+            {{.Difficulty}} </div>
+        {{else if eq .Difficulty "Medium"}}
+        <div class="text-md bg-amber-100 text-amber-700 px-2 rounded-lg dark:bg-gray-700">
+            {{.Difficulty}} </div>
+        {{else if eq .Difficulty "Hard"}}
+        <div class="text-md bg-red-100 text-red-700 px-2 rounded-lg dark:bg-gray-700">
+            {{.Difficulty}} </div>
+
+        {{end}}
+
+        <div> {{.AskedInCompanies}} </div>
+    </div>
+    <div>
+        <div class="tracking-normal text-content font-sans text-sm">
+
+            <article>{{ .Description }}</article>
+        </div>
+    </div>
 </div>
 
 {{ end }}

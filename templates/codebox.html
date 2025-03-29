@@ -1,0 +1,74 @@
+{{ block "CodeBox" . }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"
+    integrity="sha512-8RnEqURPUc5aqFEN04aQEiPlSAdE0jlFS/9iGgUyNtwFnSKCXhmB6ZTNl7LnDtDWKabJIASzXrzD0K+LYexU9g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css"
+    integrity="sha512-uf06llspW44/LZpHzHT6qBOIVODjWtv4MxCricRxkzvopAlSWnTf6hpZTFxuuZcuNE9CBQhqE0Seu1CoRk84nQ=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/python/python.min.js"
+    integrity="sha512-2M0GdbU5OxkGYMhakED69bw0c1pW3Nb0PeF3+9d+SnwN1ryPx3wiDdNqK3gSM7KAU/pEV+2tFJFbMKjKAahOkQ=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="/static/closetag.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://codemirror.net/5/addon/edit/matchbrackets.js" crossorigin="anonymous"
+    referrerpolicy="no-referrer"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/hopscotch.min.css"
+    integrity="sha512-sVeSVnAJXmUh3VZLbkOfp+td37wPdXnCjPDhuuxwYz3USskJRWIno4dlLxqo6DgPIzWwdlxl24KiHge0TvH5oA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+
+
+
+<textarea name="codebox" id="codebox" wrap="soft"
+    class="w-full p-2 firacode-400 dark:bg-gray-900 dark:text-white"></textarea>
+
+
+<style>
+    .CodeMirror {
+        height: 100vh;
+        font-family: 'Fira Code, monospace';
+        font-size: 16px;
+    }
+
+    .CodeMirror-line {
+        font-family: 'Fira Code, monospace';
+    }
+
+    .cm-content {
+        font-family: 'Fira Code', monospace;
+    }
+
+    .cm-content {
+        font-family: 'Fira Code', monospace;
+        min-height: 200px;
+    }
+
+    .cm-gutters {
+        min-height: 200px;
+    }
+
+    .cm-scroller {
+        overflow: auto;
+        max-height: 600px;
+    }
+</style>
+
+
+
+<script>
+    var code = document.getElementById("codebox");
+    code.style.fontFamily = 'Fira Code, monospace';
+
+
+    CodeMirror.fromTextArea(code, {
+        lineNumbers: true,
+        mode: { name: "python" },
+        theme: "hopscotch",
+        font: "Fira Code, monospace",
+        indent: 4,
+        autoCloseTags: true
+
+    })
+
+</script>
+
+{{ end }}

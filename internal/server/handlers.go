@@ -53,8 +53,16 @@ func SearchQuestionHandler(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, http.StatusBadRequest, ErrorSlug)
 		return
 	}
-	data := map[string]string{
-		"Title": question_slug,
+	data := QuestionData{
+		Title: "Two Sum",
+		Description: `
+		Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.
+
+		You may assume that each input would have exactly one solution, and you may not use the same element twice.
+		You can return the answer in any order.
+		`,
+		Difficulty:       "Hard",
+		AskedInCompanies: []string{"Microsoft", "Intuit", "Amazon"},
 	}
 
 	if err := tmpl.ExecuteTemplate(w, "QuestionBlock", data); err != nil {
