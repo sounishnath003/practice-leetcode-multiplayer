@@ -1,5 +1,7 @@
 package server
 
+import "html/template"
+
 type IndexPageData struct {
 	Title                     string
 	SupportedProgrammingLangs []string
@@ -8,7 +10,7 @@ type IndexPageData struct {
 
 type QuestionData struct {
 	Title            string
-	Description      string
+	Description      template.HTML
 	Difficulty       string
 	AskedInCompanies []string
 }

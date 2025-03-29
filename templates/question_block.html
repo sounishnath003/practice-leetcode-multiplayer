@@ -1,9 +1,8 @@
 {{block "QuestionBlock" . }}
 
-<div id="questionBlock"
-    class="flex flex-col gap-4 dark:bg-gray-800 dark:text-white font-mono max-w-[600px] overflow-y-scroll my-2">
-    <div class="text-3xl font-medium text-gray-800"> {{ .Title}} </div>
-    <div class="flex flex-items gap-4 text-md">
+<div id="questionBlock" class="flex flex-col gap-4 dark:text-white max-w-[600px] overflow-y-scroll mx-1 my-2">
+    <h2 class="text-3xl"> {{.Title}} </h2>
+    <div class="flex flex-items gap-1 text-md">
 
         {{if eq .Difficulty "Easy"}}
         <div class="text-md bg-green-100 text-green-700 px-2 rounded-lg dark:bg-gray-700">
@@ -17,14 +16,18 @@
 
         {{end}}
 
-        <div> {{.AskedInCompanies}} </div>
+        {{ if .AskedInCompanies }}
+        <div> | {{.AskedInCompanies}} </div>
+        {{end}}
     </div>
-    <div>
-        <div class="tracking-normal text-content font-sans text-sm">
 
-            <article>{{ .Description }}</article>
+    {{ if .Description }}
+        <div class="tracking-normal text-content text-sm">
+            <p>Problem description:</p>
+            <article> {{ .Description}}</article>
         </div>
-    </div>
+    {{end}}
+
 </div>
 
 {{ end }}
