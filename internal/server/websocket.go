@@ -158,7 +158,9 @@ func (r *Room) Run() {
 
 // HandleWebSocket handles WebSocket connections with improved client handling
 func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
-	roomID := r.FormValue("room_id")
+	// roomID := r.FormValue("room_id")
+	roomID := r.URL.Query().Get("room_id")
+	log.Println("roomID=", roomID)
 	if roomID == "" {
 		http.Error(w, "room_id is required", http.StatusBadRequest)
 		return

@@ -163,6 +163,8 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 
 // JoinRoomHandler handles requests to join existing rooms
 func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
+	// Grab the templ from the context
+	tmpl := r.Context().Value("template").(*template.Template)
 
 	roomID := r.FormValue("room_id")
 	if roomID == "" {
@@ -184,18 +186,25 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 	clientCount := len(room.Clients)
 	room.mu.RUnlock()
 
-	if clientCount >= 2 {
-		http.Error(w, "Room is full", http.StatusConflict)
+	if clientCount == 2 {
 		SendErrorResponse(w, http.StatusConflict, ErrRoomFull)
 		return
 	}
 
-	// Prepare response
-	response := RoomResponse{
-		RoomID:       roomID,
-		Message:      "Ready to join room",
-		WebSocketURL: "/ws?room_id=" + roomID,
+	// Setting up the data
+	data := CollaborativeRoomPageData{
+		Title:                     "Practice Leetcode Multiplayer",
+		SupportedProgrammingLangs: []string{"Python", "Java", "Javascript"},
+		Message:                   "Hello Sounish, Welcome to the Leetcode Practice Problems",
+		Room: RoomResponse{
+			RoomID:       roomID,
+			Message:      "Room joined successfully",
+			WebSocketURL: "/ws?room_id=" + roomID,
+		},
 	}
 
-	SendJSONResponse(w, http.StatusOK, response)
+	if err := tmpl.ExecuteTemplate(w, "HomePage", data); err != nil {
+		SendErrorResponse(w, http.StatusInternalServerError, err)
+		return
+	}
 }
