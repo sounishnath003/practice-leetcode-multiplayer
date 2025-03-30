@@ -22,6 +22,9 @@ func (s *Server) StartServer() error {
 	srv.HandleFunc("GET /api/healthz", MiddlewareChain(HealthHandler, LoggerMiddleware()))
 	srv.HandleFunc("POST /api/search", MiddlewareChain(SearchQuestionHandler, LoggerMiddleware()))
 
+	// Add a websocket server route
+	srv.HandleFunc("GET /ws", MiddlewareChain(HandleWebSocket, LoggerMiddleware()))
+
 	// Serve the static assets
 	staticFileServer := http.FileServer(http.Dir("./templates"))
 	srv.Handle("GET /static/", http.StripPrefix("/static/", staticFileServer))

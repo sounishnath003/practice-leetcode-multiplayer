@@ -1,8 +1,13 @@
 {{ block "CreateRoom" . }}
 
+<script src="https://unpkg.com/htmx.org@2.0.4"
+    integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+    crossorigin="anonymous"></script>
+<script src="https://unpkg.com/htmx-ext-ws@2.0.2" crossorigin="anonymous"></script>
+
 <div class="flex flex-col gap-5 min-w-[520px]">
     <!-- to join in a room -->
-    <form class="max-w-md mx-auto min-w-full">
+    <form class="max-w-md mx-auto min-w-full" hx-ext="ws" ws-connect="/ws">
         <label for="default-search"
             class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
         <div class="relative">
@@ -13,7 +18,7 @@
                         d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
                 </svg>
             </div>
-            <input type="search" id="default-search"
+            <input type="search" id="default-search" name="room_id"
                 class="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                 placeholder="Paste Room's URL to join in..." required />
             <button type="submit"
@@ -23,11 +28,17 @@
     </form>
 
     <!-- to create a room -->
-    <button type="button"
-        class="text-white cursor-pointer bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">Create
-        own multiplayer room</button>
+    <button type="button" hx-ext="ws" ws-connect="/ws?room_id=new-room"
+        class="text-white cursor-pointer bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">
+        🚀 Create own multiplayer room
+    </button>
 
+    <!-- Placeholder for dynamically updating the QuestionBlock -->
+    <div id="questionBlock" hx-swap="outerHTML" hx-trigger="ws:message">
+        {{ template "QuestionBlock" . }}
+    </div>
 
 </div>
+
 
 {{ end }}

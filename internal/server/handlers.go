@@ -95,7 +95,7 @@ Output: [0,1]
 		
 		<p> <b> Follow-up: </b> Can you come up with an algorithm that is less than O(n2) time complexity? </p>
 		`),
-		Difficulty:       "Hard",
+		Difficulty:       "Easy",
 		AskedInCompanies: []string{"Microsoft", "Intuit", "Amazon"},
 	}
 

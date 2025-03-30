@@ -49,6 +49,10 @@
         </select>
     </div>
 
+    <div class="flex min-h-screen items-center justify-center dark:bg-gray-900">
+        {{ template "CreateRoom" }}
+    </div>
+
     <!-- Main Section area -->
     <div
         class="flex flex-items items-center justify-start dark:bg-gray-900 bg-gray-50 min-h-screen px-2 dark:text-white">
