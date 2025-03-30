@@ -1,4 +1,6 @@
 {{ block "CodeBox" . }}
+
+<!-- CodeMirror JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"
     integrity="sha512-8RnEqURPUc5aqFEN04aQEiPlSAdE0jlFS/9iGgUyNtwFnSKCXhmB6ZTNl7LnDtDWKabJIASzXrzD0K+LYexU9g=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -29,10 +31,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/hint/anyword-hint.min.js"
     integrity="sha512-wdYOcbX/zcS4tP3HEDTkdOI5UybyuRxJMQzDQIRcafRLY/oTDWyXO+P8SzuajQipcJXkb2vHcd1QetccSFAaVw=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="/static/javascript/codebox.js"></script>
+<!-- CodeMirror JS -->
 
 
 <textarea name="codebox" id="codebox" wrap="hard"
-    class="w-full p-2 firacode-400 dark:bg-gray-900 dark:text-white"></textarea>
+    class="w-full min-h-screen p-2 firacode-400 dark:bg-gray-900 dark:text-white"></textarea>
 
 <style>
     .CodeMirror {
@@ -40,36 +44,12 @@
         font-family: 'Fira Code, monospace';
         font-size: 16px;
     }
-    
+
     div>.CodeMirror-code {
         font-family: monospace;
         font-size: 16px;
     }
 </style>
 
-<script>
-    var code = document.getElementById("codebox");
-    code.style.fontFamily = 'Fira Code, monospace';
-
-
-    CodeMirror.fromTextArea(code, {
-        lineNumbers: true,
-        mode: { name: "python" },
-        theme: "hopscotch",
-        font: "Fira Code, monospace",
-        indent: 4,
-        indentUnit: 4,
-        smartIndent: true,
-        moveOnDrag: true,
-        autoCloseTags: true,
-        autoCloseBrackets: true,
-        lineWrapping: true,
-        matchBrackets: true,
-        foldGutter: true,
-        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
-        extraKeys: { "Alt-F": "findPersistent", "Cmd-/": 'toggleComment' },
-    })
-
-</script>
 
 {{ end }}

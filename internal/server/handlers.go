@@ -3,12 +3,18 @@ package server
 import (
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
+
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 )
 
 var (
-	ErrorSlug   = fmt.Errorf("no slug provided or no data found")
-	ErrNotFound = fmt.Errorf("not found")
+	ErrorSlug           = fmt.Errorf("no slug provided or no data found")
+	ErrNotFound         = fmt.Errorf("not found")
+	ErrMethodNotAllowed = fmt.Errorf("method not allowed")
+	ErrRoomFull         = fmt.Errorf("room is full")
 )
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -23,17 +29,31 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Setting up the data
-	data := IndexPageData{
-		Title:                     "Practice Leetcode Multiplayer",
-		SupportedProgrammingLangs: []string{"Python", "Java", "Javascript"},
-		Message:                   "Hello Sounish, Welcome to the Leetcode Practice Problems",
-	}
-
-	if err := tmpl.ExecuteTemplate(w, "Index", data); err != nil {
+	if err := tmpl.ExecuteTemplate(w, "Index", nil); err != nil {
 		SendErrorResponse(w, http.StatusInternalServerError, err)
 		return
 	}
+}
+
+func JoinCollaborativeSessionHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	roomID := vars["room_id"]
+
+	if roomID == "" {
+		SendErrorResponse(w, http.StatusBadRequest, ErrInvalidRoomId)
+		return
+	}
+
+	roomManager.mu.RLock()
+	room, exists := roomManager.Rooms[roomID]
+	roomManager.mu.RUnlock()
+	log.Println("room ==== ", room, "roomID=", roomID)
+	if !exists {
+		SendErrorResponse(w, http.StatusBadRequest, ErrInvalidRoomId)
+		return
+	}
+
+	SendJSONResponse(w, http.StatusOK, room)
 }
 
 // HealthHandler handles the API healthz params.
@@ -103,4 +123,79 @@ Output: [0,1]
 		SendErrorResponse(w, http.StatusInternalServerError, err)
 		return
 	}
+}
+
+// CreateRoomHandler handles the creation of new rooms
+func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
+	// Grab the templ from the context
+	tmpl := r.Context().Value("template").(*template.Template)
+
+	// Generate a unique room ID
+	roomID := uuid.New().String()
+
+	roomManager.mu.Lock()
+	if len(roomManager.Rooms) >= roomManager.maxRooms {
+		roomManager.cleanupOldRooms()
+	}
+
+	// Create room in memory (it will be fully initialized when WebSocket connects)
+	room := CreateRoom(roomID)
+	roomManager.Rooms[roomID] = room
+	roomManager.mu.Unlock()
+
+	// Setting up the data
+	data := CollaborativeRoomPageData{
+		Title:                     "Practice Leetcode Multiplayer",
+		SupportedProgrammingLangs: []string{"Python", "Java", "Javascript"},
+		Message:                   "Hello Sounish, Welcome to the Leetcode Practice Problems",
+		Room: RoomResponse{
+			RoomID:       roomID,
+			Message:      "Room created successfully",
+			WebSocketURL: "/ws?room_id=" + roomID,
+		},
+	}
+
+	if err := tmpl.ExecuteTemplate(w, "HomePage", data); err != nil {
+		SendErrorResponse(w, http.StatusInternalServerError, err)
+		return
+	}
+}
+
+// JoinRoomHandler handles requests to join existing rooms
+func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
+
+	roomID := r.FormValue("room_id")
+	if roomID == "" {
+		SendErrorResponse(w, http.StatusBadRequest, ErrInvalidRoomId)
+		return
+	}
+
+	roomManager.mu.RLock()
+	room, exists := roomManager.Rooms[roomID]
+	roomManager.mu.RUnlock()
+
+	if !exists {
+		SendErrorResponse(w, http.StatusBadRequest, ErrInvalidRoomId)
+		return
+	}
+
+	// Check if room is full
+	room.mu.RLock()
+	clientCount := len(room.Clients)
+	room.mu.RUnlock()
+
+	if clientCount >= 2 {
+		http.Error(w, "Room is full", http.StatusConflict)
+		SendErrorResponse(w, http.StatusConflict, ErrRoomFull)
+		return
+	}
+
+	// Prepare response
+	response := RoomResponse{
+		RoomID:       roomID,
+		Message:      "Ready to join room",
+		WebSocketURL: "/ws?room_id=" + roomID,
+	}
+
+	SendJSONResponse(w, http.StatusOK, response)
 }

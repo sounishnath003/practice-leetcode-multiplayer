@@ -18,76 +18,16 @@
         crossorigin="anonymous"></script>
     <script src="https://unpkg.com/htmx-ext-ws@2.0.2" crossorigin="anonymous"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
 </head>
 
 <body>
-    <div class="flex flex-row justify-between items-center p-1 bg-gray-100 dark:bg-gray-800 px-4 gap-4 dark:text-white">
-        <!-- Logo and Menu button -->
-        <div class="text-sm md:text-xl font-medium cursor-pointer"> {{.Title}} </div>
-        <!-- Display the roomId dynamically -->
-        <div id="roomIdDisplay" class="text-sm text-gray-700 dark:text-gray-300">
-            Room ID: <span id="roomId">None</span>
-        </div>
-        <!-- Search Questions input box -->
-        <span class="htmx-indicator">
-            Searching...
-        </span>
-        <div class="w-[600px]">
-            <input type="search" id="searchQuestion" name="searchQuestion" hx-post="/api/search"
-                hx-trigger="input changed delay:500ms, keyup[key=='Enter'], load" hx-indicator=".htmx-indicator"
-                hx-target="#questionBlock"
-                class="form-control w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                placeholder="Type questions and hit enter" required />
-        </div>
-        <!-- Choose language options -->
 
-        <select id="programmingLanguages"
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-            {{ range .SupportedProgrammingLangs }}
-            <option value="{{ . }}"> {{.}} </option>
-            {{ end }}
-        </select>
+    <div class="flex min-h-screen items-center justify-center dark:bg-gray-900">
+        {{ template "CreateRoom" }}
     </div>
-
-    <!-- Main Section area -->
-    <div
-        class="flex flex-items items-center justify-start dark:bg-gray-900 bg-gray-50 min-h-screen px-2 dark:text-white">
-        <div class="border-r h-screen min-w-[550px]">
-            {{ template "QuestionBlock" }}
-        </div>
-        <div class="w-full">
-            {{template "CodeBox"}}
-        </div>
-    </div>
-    <!-- Main Section area -->
-
 
 </body>
-
-<script>
-    // Listen for WebSocket messages
-    const ws = new WebSocket("ws://localhost:3000/ws");
-
-    ws.onmessage = function (event) {
-        const data = JSON.parse(event.data);
-
-        if (data.type === "new-room") {
-            document.getElementById("roomId").textContent = data.roomId;
-
-            // Dynamically update the QuestionBlock
-            document.getElementById("questionBlock").innerHTML = `
-                <h2 class="text-lg font-bold">Room Created: ${data.roomId}</h2>
-                <p>Select a question to begin.</p>
-            `;
-
-            // Dynamically update the CodeBlock
-            document.getElementById("codeBlock").innerHTML = `
-                <h2 class="text-lg font-bold">Code Editor for Room: ${data.roomId}</h2>
-                <pre id="editorContent" class="text-sm bg-gray-900 text-white p-2 rounded-md">Start coding here...</pre>
-            `;
-        }
-    };
-</script>
 
 </html>
 

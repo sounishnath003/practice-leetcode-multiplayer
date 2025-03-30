@@ -1,11 +1,14 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -13,92 +16,139 @@ var (
 	ErrInvalidRoomId = fmt.Errorf("invalid room_id or no room id provided")
 )
 
-// Room represents a WebSocket room with a maximum of 2 participants.
-type Room struct {
-	ID           string
-	Clients      map[*websocket.Conn]string // Map of WebSocket connections to user roles (Author/Collaborator)
-	Broadcast    chan []byte
-	Register     chan *websocket.Conn
-	Unregister   chan *websocket.Conn
-	CurrentState []byte // Stores the current state of the document
-	mu           sync.Mutex
+// MessageType represents different types of WebSocket messages
+type MessageType string
+
+const (
+	TypeJoin  MessageType = "join"
+	TypeCode  MessageType = "code"
+	TypeChat  MessageType = "chat"
+	TypeSync  MessageType = "sync"
+	TypeError MessageType = "error"
+)
+
+// WebSocketMessage represents the structure of messages
+type WebSocketMessage struct {
+	Type    MessageType `json:"type"`
+	RoomID  string      `json:"room_id"`
+	Content interface{} `json:"content"`
+	UserID  string      `json:"user_id"`
 }
 
-// RoomManager manages all active rooms.
-type RoomManager struct {
-	Rooms map[string]*Room
-	mu    sync.Mutex
+// Room represents a WebSocket room with a maximum of 2 participants
+type Room struct {
+	ID         string
+	Clients    map[*Client]bool
+	Broadcast  chan *WebSocketMessage
+	Register   chan *Client
+	Unregister chan *Client
+	CodeState  string // Current code state
+	Problem    string // Current problem
+	CreatedAt  time.Time
+	mu         sync.RWMutex
+}
+
+// Client represents a connected user
+type Client struct {
+	Conn     *websocket.Conn
+	Room     *Room
+	UserID   string
+	Role     string // "Author" or "Collaborator"
+	SendChan chan *WebSocketMessage
 }
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+// RoomManager manages all active rooms with cleanup
+type RoomManager struct {
+	Rooms    map[string]*Room
+	mu       sync.RWMutex
+	maxRooms int
 }
 
 var roomManager = &RoomManager{
-	Rooms: make(map[string]*Room),
+	Rooms:    make(map[string]*Room),
+	maxRooms: 100, // Adjust based on your server capacity
 }
 
-// CreateRoom creates a new room with a unique ID.
-func CreateRoom(roomID string, conn *websocket.Conn) *Room {
+// CreateRoom creates a new room with improved initialization
+func CreateRoom(roomID string) *Room {
 	room := &Room{
-		ID:           roomID,
-		Clients:      make(map[*websocket.Conn]string),
-		Broadcast:    make(chan []byte),
-		Register:     make(chan *websocket.Conn),
-		Unregister:   make(chan *websocket.Conn),
-		CurrentState: []byte{}, // Initialize with an empty state
+		ID:         roomID,
+		Clients:    make(map[*Client]bool),
+		Broadcast:  make(chan *WebSocketMessage, 100), // Buffered channel
+		Register:   make(chan *Client, 2),
+		Unregister: make(chan *Client, 2),
+		CreatedAt:  time.Now(),
 	}
-	room.Clients[conn] = "Author" // The first connection is the Author
 	go room.Run()
 	return room
 }
 
-// Run handles the room's WebSocket connections and messages.
+// Run handles the room's WebSocket operations with improved error handling
 func (r *Room) Run() {
+	ticker := time.NewTicker(30 * time.Second) // Periodic cleanup
+	defer ticker.Stop()
+
 	for {
 		select {
-		case conn := <-r.Register:
+		case client := <-r.Register:
 			r.mu.Lock()
 			if len(r.Clients) < 2 {
-				r.Clients[conn] = "Collaborator" // New user is a Collaborator
-				log.Printf("Collaborator joined room %s", r.ID)
-
-				// Send the current state of the document to the new user
-				if len(r.CurrentState) > 0 {
-					err := conn.WriteMessage(websocket.TextMessage, r.CurrentState)
-					if err != nil {
-						log.Printf("Error sending current state: %v", err)
-					}
+				r.Clients[client] = true
+				// Send current state to new client
+				syncMsg := &WebSocketMessage{
+					Type:    TypeSync,
+					Content: r.CodeState,
+					RoomID:  r.ID,
 				}
+				client.SendChan <- syncMsg
 			} else {
-				log.Printf("Room %s is full", r.ID)
-				conn.Close()
+				client.SendChan <- &WebSocketMessage{
+					Type:    TypeError,
+					Content: "Room is full",
+				}
+				close(client.SendChan)
 			}
 			r.mu.Unlock()
 
-		case conn := <-r.Unregister:
+		case client := <-r.Unregister:
 			r.mu.Lock()
-			if _, ok := r.Clients[conn]; ok {
-				delete(r.Clients, conn)
-				conn.Close()
-				log.Printf("Client disconnected from room %s", r.ID)
+			if _, ok := r.Clients[client]; ok {
+				delete(r.Clients, client)
+				close(client.SendChan)
 			}
 			r.mu.Unlock()
 
 		case message := <-r.Broadcast:
 			r.mu.Lock()
-			// Update the current state of the document
-			r.CurrentState = message
+			if message.Type == TypeCode {
+				r.CodeState = message.Content.(string)
+			}
 
-			// Broadcast the message to all clients
-			for conn := range r.Clients {
-				err := conn.WriteMessage(websocket.TextMessage, message)
-				if err != nil {
-					log.Printf("Error sending message: %v", err)
-					conn.Close()
-					delete(r.Clients, conn)
+			for client := range r.Clients {
+				select {
+				case client.SendChan <- message:
+				default:
+					close(client.SendChan)
+					delete(r.Clients, client)
+				}
+			}
+			r.mu.Unlock()
+
+		case <-ticker.C:
+			r.mu.Lock()
+			// Cleanup inactive clients
+			for client := range r.Clients {
+				if err := client.Conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second)); err != nil {
+					client.Conn.Close()
+					delete(r.Clients, client)
 				}
 			}
 			r.mu.Unlock()
@@ -106,12 +156,9 @@ func (r *Room) Run() {
 	}
 }
 
-// HandleWebSocket handles WebSocket connections and assigns them to rooms.
+// HandleWebSocket handles WebSocket connections with improved client handling
 func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	roomID := r.FormValue("room_id")
-	// roomID := r.URL.Query().Get("room_id")
-	log.Println("roomID====", roomID)
-	
 	if roomID == "" {
 		http.Error(w, "room_id is required", http.StatusBadRequest)
 		return
@@ -123,28 +170,115 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Create new client with buffered channel
+	client := &Client{
+		Conn:     conn,
+		SendChan: make(chan *WebSocketMessage, 100),
+		UserID:   generateUserID(), // Implement this helper function
+	}
+
 	roomManager.mu.Lock()
 	room, exists := roomManager.Rooms[roomID]
 	if !exists {
-		// Create a new room and assign the first user as the Author
-		room = CreateRoom(roomID, conn)
+		if len(roomManager.Rooms) >= roomManager.maxRooms {
+			roomManager.cleanupOldRooms()
+		}
+		room = CreateRoom(roomID)
 		roomManager.Rooms[roomID] = room
-		log.Printf("Room %s created by Author", roomID)
+		client.Role = "Author"
 	} else {
-		// Add the new user to the existing room
-		room.Register <- conn
+		client.Role = "Collaborator"
 	}
+	client.Room = room
 	roomManager.mu.Unlock()
 
-	go func() {
-		defer func() { room.Unregister <- conn }()
-		for {
-			_, message, err := conn.ReadMessage()
-			if err != nil {
-				log.Printf("Read error: %v", err)
-				break
-			}
-			room.Broadcast <- message
-		}
+	// Start client message handlers
+	go client.writePump()
+	go client.readPump()
+
+	// Register client with room
+	room.Register <- client
+}
+
+func generateUserID() string {
+	return uuid.New().String()
+}
+
+// Client message reading routine
+func (c *Client) readPump() {
+	defer func() {
+		c.Room.Unregister <- c
+		c.Conn.Close()
 	}()
+
+	c.Conn.SetReadLimit(4096) // Limit message size
+	c.Conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	c.Conn.SetPongHandler(func(string) error {
+		c.Conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		return nil
+	})
+
+	for {
+		_, message, err := c.Conn.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				log.Printf("error: %v", err)
+			}
+			break
+		}
+
+		var msg WebSocketMessage
+		if err := json.Unmarshal(message, &msg); err != nil {
+			continue
+		}
+		msg.UserID = c.UserID
+		c.Room.Broadcast <- &msg
+	}
+}
+
+// Client message writing routine
+func (c *Client) writePump() {
+	ticker := time.NewTicker(54 * time.Second)
+	defer func() {
+		ticker.Stop()
+		c.Conn.Close()
+	}()
+
+	for {
+		select {
+		case message, ok := <-c.SendChan:
+			c.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if !ok {
+				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+
+			w, err := c.Conn.NextWriter(websocket.TextMessage)
+			if err != nil {
+				return
+			}
+
+			json.NewEncoder(w).Encode(message)
+
+			if err := w.Close(); err != nil {
+				return
+			}
+
+		case <-ticker.C:
+			c.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
+		}
+	}
+}
+
+// Cleanup old rooms to manage server resources
+func (rm *RoomManager) cleanupOldRooms() {
+	threshold := time.Now().Add(-24 * time.Hour)
+	for id, room := range rm.Rooms {
+		if room.CreatedAt.Before(threshold) && len(room.Clients) == 0 {
+			delete(rm.Rooms, id)
+		}
+	}
 }

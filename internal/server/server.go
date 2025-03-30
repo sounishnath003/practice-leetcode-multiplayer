@@ -24,6 +24,9 @@ func (s *Server) StartServer() error {
 
 	// Add a websocket server route
 	srv.HandleFunc("GET /ws", MiddlewareChain(HandleWebSocket, LoggerMiddleware()))
+	srv.HandleFunc("POST /api/create-room", MiddlewareChain(CreateRoomHandler, LoggerMiddleware()))
+	srv.HandleFunc("POST /api/join-room", MiddlewareChain(JoinRoomHandler, LoggerMiddleware()))
+	srv.HandleFunc("POST /rooms/{room_id}", MiddlewareChain(JoinCollaborativeSessionHandler, LoggerMiddleware()))
 
 	// Serve the static assets
 	staticFileServer := http.FileServer(http.Dir("./templates"))
