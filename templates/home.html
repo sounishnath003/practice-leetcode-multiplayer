@@ -9,11 +9,11 @@
     <div id="roomIdDisplay" class="text-sm text-gray-700 dark:text-gray-300">
         Room ID:
         {{ if .Room.RoomID }}
-        <span id="roomId text-green-600">
+        <span id="roomId" class="text-green-600">
             {{ .Room.RoomID }}
         </span>
         {{ else }}
-        <span id="roomId text-red-600">
+        <span id="roomId" class="text-red-600">
             None
         </span>
         {{ end }}
@@ -52,19 +52,6 @@
 </div>
 <!-- Main Section area -->
 
-<div id="notifications" hx-ext="ws" ws-connect="/ws" class="mt-4 p-4 hidden">
 </div>
-
-<script>
-    const ws = new WebSocket(`ws://localhost:3000/ws`);
-    ws.onopen = (e) => {
-        console.log(e);
-        ws.send(`hii, from frontend....`)
-    };
-    ws.onmessage = (e) => {
-        console.log(e);
-        ws.send(`i got from server`, e)
-    };
-</script>
 
 {{end}}
