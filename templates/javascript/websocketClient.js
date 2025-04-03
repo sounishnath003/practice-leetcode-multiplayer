@@ -29,7 +29,7 @@ class WebSocketClient {
     constructor(roomId, editor) {
         this.roomId = roomId;
         this.editor = editor;
-        this.wss = new WebSocket(`ws://localhost:3000/ws?room_id=${roomId}`);
+        this.wss = new WebSocket(`ws://${window.location.host}/ws?room_id=${roomId}`);
         this.user_id = undefined;
         this.role = undefined;
         this.notificationContainer = this.createNotificationContainer();

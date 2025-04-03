@@ -18,12 +18,34 @@ This project is a multiplayer platform for practicing Leetcode problems. It allo
     ```
 2. Install dependencies:
     ```bash
-    npm install
+    make install
     ```
 3. Start the application:
     ```bash
-    npm start
+    make run
     ```
+4. Build docker image:
+    ```bash
+    # Build stage
+    FROM golang:1.24-alpine AS builder
+
+    WORKDIR /app
+
+    COPY . .
+    RUN go mod tidy && go mod download && go mod verify
+    RUN CGO_ENABLED=0 go build -o /app/bin/practice_leetcode_multiplayer main.go
+
+    # Final stage
+    FROM scratch
+    WORKDIR /app
+
+    COPY --from=builder /app/bin/practice_leetcode_multiplayer /app/bin/practice_leetcode_multiplayer
+    COPY --from=builder /app/templates/ ./templates/
+
+    EXPOSE 3000
+    ENTRYPOINT [ "/app/bin/practice_leetcode_multiplayer" ]
+    ```
+
 
 ## Contributing
 
