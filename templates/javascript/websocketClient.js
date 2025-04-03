@@ -31,6 +31,9 @@ class WebSocketClient {
         this.editor = editor;
         this.wss = new WebSocket(`ws://localhost:3000/ws?room_id=${roomId}`);
         this.user_id = undefined;
+        this.role = undefined;
+        this.notificationContainer = this.createNotificationContainer();
+        this.joinedUserElement = document.querySelector('#joinedUser');
 
         this.wss.addEventListener('open', (e) => {
             console.log('websocket.connection.open', e);
@@ -39,8 +42,15 @@ class WebSocketClient {
         this.wss.addEventListener('message', (e) => {
             const message = JSON.parse(e.data);
             this.user_id = message.user_id;
+            this.role = message.role;
 
-            if (message.type === 'code') {
+            if (message.type === 'join') {
+                this.showNotification(`${message.role} joined the room`, 'success');
+                this.updateJoinedUser(message.role);
+            } else if (message.type === 'leave') {
+                this.showNotification(`${message.role} left the room`, 'warning');
+                this.updateJoinedUser(null);
+            } else if (message.type === 'code') {
                 // Update editor content without triggering change event
                 const currentCursor = this.editor.getCursor();
                 this.editor.setValue(message.content);
@@ -48,9 +58,19 @@ class WebSocketClient {
             }
 
             // Update the problemTitle and problemDescription Div
-            this.#updateProblemTitle(message.problem_title);
-            this.#updateProblemDescription(message.problem_description);
+            if (message.problem_title) {
+                this.#updateProblemTitle(message.problem_title);
+            }
+            if (message.problem_description) {
+                this.#updateProblemDescription(message.problem_description);
+            }
+        });
 
+        this.wss.addEventListener('close', () => {
+            this.showNotification('Connection closed. Attempting to reconnect...', 'error');
+            setTimeout(() => {
+                this.wss = new WebSocket(`ws://localhost:3000/ws?room_id=${roomId}`);
+            }, 3000);
         });
 
         // Handle editor changes
@@ -60,6 +80,44 @@ class WebSocketClient {
                 this.#sendCode(content);
             }
         });
+    }
+
+    createNotificationContainer() {
+        const container = document.createElement('div');
+        container.className = 'fixed top-4 right-4 z-50 flex flex-col gap-2';
+        document.body.appendChild(container);
+        return container;
+    }
+
+    showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        const baseClasses = 'px-4 py-2 rounded-lg shadow-lg text-white transform transition-all duration-300';
+        const typeClasses = {
+            success: 'bg-green-500',
+            warning: 'bg-yellow-500',
+            error: 'bg-red-500',
+            info: 'bg-blue-500'
+        };
+
+        notification.className = `${baseClasses} ${typeClasses[type] || typeClasses.info}`;
+        notification.textContent = message;
+
+        this.notificationContainer.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => {
+            notification.style.opacity = '1';
+            notification.style.transform = 'translateX(0)';
+        }, 10);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                this.notificationContainer.removeChild(notification);
+            }, 300);
+        }, 3000);
     }
 
     #sendCode(content) {
@@ -102,6 +160,18 @@ class WebSocketClient {
         }
     }
 
+    updateJoinedUser(oppositeRole) {
+        if (this.joinedUserElement) {
+            if (oppositeRole) {
+                // If I am Author, show Collaborator and vice versa
+                const myRole = this.role;
+                const displayRole = myRole === 'Author' ? 'Collaborator' : 'Author';
+                this.joinedUserElement.textContent = `@${displayRole}`;
+            } else {
+                this.joinedUserElement.textContent = 'None';
+            }
+        }
+    }
 }
 
 function runWebsocketProcess() {

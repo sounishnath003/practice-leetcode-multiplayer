@@ -24,6 +24,7 @@ const (
 	TypeCode  MessageType = "code"
 	TypeChat  MessageType = "chat"
 	TypeSync  MessageType = "sync"
+	TypeLeave MessageType = "leave"
 	TypeError MessageType = "error"
 )
 
@@ -35,6 +36,7 @@ type WebSocketMessage struct {
 	ProblemTitle       string      `json:"problem_title"`
 	ProblemDescription string      `json:"problem_description"`
 	UserID             string      `json:"user_id"`
+	Role               string      `json:"role"`
 }
 
 // Room represents a WebSocket room with a maximum of 2 participants
@@ -112,8 +114,19 @@ func (r *Room) Run() {
 					ProblemTitle:       r.ProblemTitle,
 					ProblemDescription: r.ProblemDescription,
 					RoomID:             r.ID,
+					UserID:             client.UserID,
+					Role:               client.Role,
 				}
 				client.SendChan <- syncMsg
+
+				// Broadcast join event
+				joinMsg := &WebSocketMessage{
+					Type:   TypeJoin,
+					UserID: client.UserID,
+					Role:   client.Role,
+					RoomID: r.ID,
+				}
+				r.Broadcast <- joinMsg
 			} else {
 				client.SendChan <- &WebSocketMessage{
 					Type:    TypeError,
@@ -128,6 +141,15 @@ func (r *Room) Run() {
 			if _, ok := r.Clients[client]; ok {
 				delete(r.Clients, client)
 				close(client.SendChan)
+
+				// Broadcast leave event
+				leaveMsg := &WebSocketMessage{
+					Type:   TypeLeave,
+					UserID: client.UserID,
+					Role:   client.Role,
+					RoomID: r.ID,
+				}
+				r.Broadcast <- leaveMsg
 			}
 			r.mu.Unlock()
 
@@ -163,7 +185,6 @@ func (r *Room) Run() {
 
 // HandleWebSocket handles WebSocket connections with improved client handling
 func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
-	// roomID := r.FormValue("room_id")
 	roomID := r.URL.Query().Get("room_id")
 	log.Println("roomID=", roomID)
 	if roomID == "" {
@@ -181,7 +202,7 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	client := &Client{
 		Conn:     conn,
 		SendChan: make(chan *WebSocketMessage, 100),
-		UserID:   generateUserID(), // Implement this helper function
+		UserID:   generateUserID(),
 	}
 
 	roomManager.mu.Lock()
@@ -194,7 +215,12 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		roomManager.Rooms[roomID] = room
 		client.Role = "Author"
 	} else {
-		client.Role = "Collaborator"
+		// Check if there are any existing clients in the room
+		if len(room.Clients) == 0 {
+			client.Role = "Author"
+		} else {
+			client.Role = "Collaborator"
+		}
 	}
 	client.Room = room
 	roomManager.mu.Unlock()
