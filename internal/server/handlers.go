@@ -15,6 +15,10 @@ var (
 	ErrNotFound         = fmt.Errorf("not found")
 	ErrMethodNotAllowed = fmt.Errorf("method not allowed")
 	ErrRoomFull         = fmt.Errorf("room is full")
+	ErrEmptyRoomId      = fmt.Errorf("please enter a valid room ID")
+	ErrRoomNotFound     = fmt.Errorf("room not found. please check the room ID and try again")
+	ErrRoomFullMsg      = fmt.Errorf("room is full. please try another room")
+	ErrJoinFailed       = fmt.Errorf("failed to join room. please try again")
 )
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -168,7 +172,7 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 
 	roomID := r.FormValue("room_id")
 	if roomID == "" {
-		SendErrorResponse(w, http.StatusBadRequest, ErrInvalidRoomId)
+		SendErrorResponse(w, http.StatusBadRequest, ErrEmptyRoomId)
 		return
 	}
 
@@ -177,7 +181,7 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 	roomManager.mu.RUnlock()
 
 	if !exists {
-		SendErrorResponse(w, http.StatusBadRequest, ErrInvalidRoomId)
+		SendErrorResponse(w, http.StatusBadRequest, ErrRoomNotFound)
 		return
 	}
 
@@ -187,7 +191,7 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 	room.mu.RUnlock()
 
 	if clientCount == 2 {
-		SendErrorResponse(w, http.StatusConflict, ErrRoomFull)
+		SendErrorResponse(w, http.StatusConflict, ErrRoomFullMsg)
 		return
 	}
 
@@ -204,7 +208,7 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := tmpl.ExecuteTemplate(w, "HomePage", data); err != nil {
-		SendErrorResponse(w, http.StatusInternalServerError, err)
+		SendErrorResponse(w, http.StatusInternalServerError, ErrJoinFailed)
 		return
 	}
 }

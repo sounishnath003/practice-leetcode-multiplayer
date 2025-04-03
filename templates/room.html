@@ -14,9 +14,11 @@
 
     <div>
         <!-- to join in a room -->
-        <form class="max-w-md mx-auto min-w-full" hx-post="/api/join-room" hx-target="body" hx-swap="outerHTML">
+        <form class="max-w-md mx-auto min-w-full" hx-post="/api/join-room" hx-target="body" hx-swap="outerHTML"
+            hx-on::after-request="handleJoinResponse(event)">
             <label for="default-search"
                 class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
+
             <div class="relative">
                 <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
                     <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true"
@@ -28,10 +30,12 @@
                 <input type="search" id="default-search" name="room_id"
                     class="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                     placeholder="Paste Room's URL to join in..." required />
-                <button type="submit"
-                    class="text-white cursor-pointer absolute end-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Join
-                    room</button>
+                <button type="submit" id="joinButton"
+                    class="text-white cursor-pointer absolute end-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                    Join room
+                </button>
             </div>
+            <div id="joinError" class="hidden mt-2 text-sm text-red-600 dark:text-red-400"></div>
         </form>
     </div>
 
@@ -42,9 +46,36 @@
             🚀 Create own multiplayer room
         </button>
     </div>
-
 </div>
 
+<script>
+    function handleJoinResponse(event) {
+        const response = event.detail.xhr;
+        const errorDiv = document.getElementById('joinError');
+        const joinButton = document.getElementById('joinButton');
 
+        if (response.status >= 400) {
+            // Show error message
+            errorDiv.textContent = response.responseText;
+            errorDiv.classList.remove('hidden');
+
+            // Change button color to red
+            joinButton.classList.remove('bg-blue-700', 'hover:bg-blue-800', 'dark:bg-blue-600', 'dark:hover:bg-blue-700');
+            joinButton.classList.add('bg-red-700', 'hover:bg-red-800', 'dark:bg-red-600', 'dark:hover:bg-red-700');
+
+            // Reset after 3 seconds
+            setTimeout(() => {
+                errorDiv.classList.add('hidden');
+                joinButton.classList.remove('bg-red-700', 'hover:bg-red-800', 'dark:bg-red-600', 'dark:hover:bg-red-700');
+                joinButton.classList.add('bg-blue-700', 'hover:bg-blue-800', 'dark:bg-blue-600', 'dark:hover:bg-blue-700');
+            }, 3000);
+        } else {
+            // Clear any existing error
+            errorDiv.classList.add('hidden');
+            joinButton.classList.remove('bg-red-700', 'hover:bg-red-800', 'dark:bg-red-600', 'dark:hover:bg-red-700');
+            joinButton.classList.add('bg-blue-700', 'hover:bg-blue-800', 'dark:bg-blue-600', 'dark:hover:bg-blue-700');
+        }
+    }
+</script>
 
 {{ end }}
