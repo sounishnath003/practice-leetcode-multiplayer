@@ -2,7 +2,7 @@
 
 <div id="questionBlock"
     class="flex flex-col gap-4 dark:text-white max-w-[520px] overflow-y-scroll text-nowrap mx-1 my-2">
-    <h2 class="text-3xl"> {{.Title}} </h2>
+    <h2 class="text-3xl" id="questionTitle"> {{.Title}} </h2>
     <div class="flex flex-items gap-1 text-md">
 
         {{if eq .Difficulty "Easy"}}
@@ -22,21 +22,9 @@
         {{end}}
     </div>
 
-    {{ if .Description }}
-    <div class="tracking-normal text-content text-sm text-balance">
-        <div>
-            <p class="text-medium text-xl my-2">Problem description:</p>
-        </div>
-        <div>
-            <article> {{ .Description}}</article>
-        </div>
+    <div class="tracking-normal text-content text-sm text-balance" id="problemDescription">
+        {{ .Description}}
     </div>
-    {{ else }}
-    <div class="tracking-normal flex flex-col items-center h-screen text-center text-red-700 text-medium text-sm">
-        <div class="p-2 rounded-lg bg-red-50">Search for questions from
-            the search box.</div>
-    </div>
-    {{end}}
 
 </div>
 

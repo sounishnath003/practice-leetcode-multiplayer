@@ -29,23 +29,26 @@ const (
 
 // WebSocketMessage represents the structure of messages
 type WebSocketMessage struct {
-	Type    MessageType `json:"type"`
-	RoomID  string      `json:"room_id"`
-	Content interface{} `json:"content"`
-	UserID  string      `json:"user_id"`
+	Type               MessageType `json:"type"`
+	RoomID             string      `json:"room_id"`
+	Content            interface{} `json:"content"`
+	ProblemTitle       string      `json:"problem_title"`
+	ProblemDescription string      `json:"problem_description"`
+	UserID             string      `json:"user_id"`
 }
 
 // Room represents a WebSocket room with a maximum of 2 participants
 type Room struct {
-	ID         string
-	Clients    map[*Client]bool
-	Broadcast  chan *WebSocketMessage
-	Register   chan *Client
-	Unregister chan *Client
-	CodeState  string // Current code state
-	Problem    string // Current problem
-	CreatedAt  time.Time
-	mu         sync.RWMutex
+	ID                 string
+	Clients            map[*Client]bool
+	Broadcast          chan *WebSocketMessage
+	Register           chan *Client
+	Unregister         chan *Client
+	ProblemTitle       string // Current problem title
+	ProblemDescription string // Current problem description
+	CodeState          string // Current code state
+	CreatedAt          time.Time
+	mu                 sync.RWMutex
 }
 
 // Client represents a connected user
@@ -104,9 +107,11 @@ func (r *Room) Run() {
 				r.Clients[client] = true
 				// Send current state to new client
 				syncMsg := &WebSocketMessage{
-					Type:    TypeSync,
-					Content: r.CodeState,
-					RoomID:  r.ID,
+					Type:               TypeSync,
+					Content:            r.CodeState,
+					ProblemTitle:       r.ProblemTitle,
+					ProblemDescription: r.ProblemDescription,
+					RoomID:             r.ID,
 				}
 				client.SendChan <- syncMsg
 			} else {
@@ -222,6 +227,7 @@ func (c *Client) readPump() {
 
 	for {
 		_, message, err := c.Conn.ReadMessage()
+		// log.Printf("websocket.message.received.in.gobackend: %s", string(message))
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("error: %v", err)
