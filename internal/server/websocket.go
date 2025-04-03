@@ -194,14 +194,6 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	client.Room = room
 	roomManager.mu.Unlock()
 
-	// Write something to the client
-	client.SendChan <- &WebSocketMessage{
-		Type:    TypeSync,
-		RoomID:  client.Room.ID,
-		Content: `Are you still watching??`,
-		UserID:  client.UserID,
-	}
-
 	// Start client message handlers
 	go client.writePump()
 	go client.readPump()

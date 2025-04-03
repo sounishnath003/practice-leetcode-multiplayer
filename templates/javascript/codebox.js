@@ -1,4 +1,4 @@
-// use strict
+"use strict";
 
 function codeboxInit() {
     // Initialize the codebox with CodeMirror
