@@ -31,6 +31,11 @@
             <article> {{ .Description}}</article>
         </div>
     </div>
+    {{ else }}
+    <div class="tracking-normal flex flex-col items-center h-screen text-center text-red-700 text-medium text-sm">
+        <div class="p-2 rounded-lg bg-red-50">Search for questions from
+            the search box.</div>
+    </div>
     {{end}}
 
 </div>

@@ -4,12 +4,12 @@
 <!-- Menu bar section -->
 <div class="flex flex-row justify-between items-center p-1 bg-gray-100 dark:bg-gray-800 px-4 gap-4 dark:text-white">
     <!-- Logo and Menu button -->
-    <div class="text-sm md:text-xl font-medium cursor-pointer"> {{.Title}} </div>
+    <div class="text-sm md:text-lg font-medium cursor-pointer"> {{.Title}} </div>
     <!-- Display the roomId dynamically -->
-    <div id="roomIdDisplay" class="text-sm text-gray-700 dark:text-gray-300">
+    <div id="roomIdDisplay" class="text-xs text-gray-700 dark:text-gray-300">
         Room ID:
         {{ if .Room.RoomID }}
-        <span id="roomId" class="text-green-600">
+        <span id="roomId" class="text-gray-800 font-medium dark:text-white">
             {{ .Room.RoomID }}
         </span>
         {{ else }}
@@ -18,6 +18,11 @@
         </span>
         {{ end }}
 
+    </div>
+    <div class="flex text-sm flex-row gap-1 text-green-700 p-1 rounded-lg dark:text-white">
+        <div>&bull;</div>
+        <div class="font-medium">Connected:</div>
+        <div>Muagerra</div>
     </div>
     <!-- Search Questions input box -->
     <span class="htmx-indicator">
