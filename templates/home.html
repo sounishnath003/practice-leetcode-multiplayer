@@ -19,7 +19,7 @@
         {{ end }}
 
     </div>
-    <div class="flex text-sm flex-row gap-1 text-green-700 p-1 rounded-lg dark:text-white">
+    <div class="flex hidden md:block text-sm flex-row gap-1 text-green-700 p-1 rounded-lg dark:text-white">
         <div>Online:</div>
         <div id="joinedUser" class="text-green-700 font-medium dark:text-green-500">@muagerra</div>
     </div>
@@ -46,7 +46,7 @@
 
 <!-- Main Section area -->
 <div id="mainSectionMultiplayer"
-    class="flex flex-items items-center justify-start dark:bg-gray-900 bg-gray-50 min-h-screen px-2 dark:text-white">
+    class="flex flex-col md:flex-row items-center justify-start dark:bg-gray-900 bg-gray-50 min-h-screen px-2 dark:text-white">
     <div class="border-r h-screen min-w-[550px]">
         {{ template "QuestionBlock" }}
     </div>
