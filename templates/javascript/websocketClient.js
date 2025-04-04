@@ -29,7 +29,8 @@ class WebSocketClient {
     constructor(roomId, editor) {
         this.roomId = roomId;
         this.editor = editor;
-        this.wss = new WebSocket(`ws://${window.location.host}/ws?room_id=${roomId}`);
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        this.wss = new WebSocket(`${protocol}://${window.location.host}/ws?room_id=${roomId}`);
         this.user_id = undefined;
         this.role = undefined;
         this.notificationContainer = this.createNotificationContainer();
