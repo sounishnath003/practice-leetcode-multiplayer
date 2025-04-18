@@ -4,6 +4,10 @@
 
 This project is a multiplayer platform for practicing Leetcode problems. It allows users to collaborate and compete in solving coding challenges in real-time.
 
+## Deployed Service URL: 
+
+[practice-leetcode-multiplayer-797087556919.asia-south1.run.app](https://practice-leetcode-multiplayer-797087556919.asia-south1.run.app)
+
 ## Features
 
 - **Rooms**: Create or join rooms to collaborate with others.
