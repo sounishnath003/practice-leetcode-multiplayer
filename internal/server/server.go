@@ -23,6 +23,7 @@ func (s *Server) StartServer() error {
 	srv.HandleFunc("POST /api/search", MiddlewareChain(SearchQuestionHandler, LoggerMiddleware()))
 
 	// Add a websocket server route
+	// Runs a websocket connection endpoint.
 	srv.HandleFunc("GET /ws", MiddlewareChain(HandleWebSocket, LoggerMiddleware()))
 	srv.HandleFunc("POST /api/create-room", MiddlewareChain(CreateRoomHandler, LoggerMiddleware()))
 	srv.HandleFunc("POST /api/join-room", MiddlewareChain(JoinRoomHandler, LoggerMiddleware()))

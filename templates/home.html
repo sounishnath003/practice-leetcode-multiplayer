@@ -19,7 +19,7 @@
         {{ end }}
 
     </div>
-    <div class="flex hidden md:block text-sm flex-row gap-1 text-green-700 p-1 rounded-lg dark:text-white">
+    <div class="flex text-xs hidden md:block text-sm flex-row gap-1 text-green-700 p-1 rounded-lg dark:text-white">
         <div>Online:</div>
         <div id="joinedUser" class="text-green-700 font-medium dark:text-green-500">@muagerra</div>
     </div>
@@ -27,7 +27,7 @@
     <span class="htmx-indicator">
         Searching...
     </span>
-    <div class="w-[600px]">
+    <div class="w-[400px]">
         <input type="search" id="searchQuestion" name="searchQuestion" hx-post="/api/search"
             hx-trigger="input changed delay:500ms, keyup[key=='Enter'], load" hx-indicator=".htmx-indicator"
             hx-target="#questionBlock"
@@ -42,6 +42,12 @@
         <option value="{{ . }}"> {{.}} </option>
         {{ end }}
     </select>
+
+    <!-- run code button -->
+    <div><button
+            class="min-w-full text-white cursor-pointer bg-red-700 hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-xs px-2 py-1 py-2.5 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
+            type="submit">Run code</button></div>
+
 </div>
 
 <!-- Main Section area -->

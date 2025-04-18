@@ -34,20 +34,32 @@
 <script src="/static/javascript/websocketClient.js"></script>
 <!-- CodeMirror JS -->
 
+<div class="flex flex-col h-screen">
+    <!-- Code Editor Section -->
+    <div class="flex-grow">
+        <textarea name="codebox" id="codebox" wrap="hard"
+            class="w-full h-full p-2 firacode-400 dark:bg-gray-900 dark:text-white"></textarea>
+    </div>
 
-<textarea name="codebox" id="codebox" wrap="hard"
-    class="w-full min-h-screen p-2 firacode-400 dark:bg-gray-900 dark:text-white"></textarea>
+    <!-- Testcases and Output Section -->
+    <div class="flex flex-col md:flex-row gap-4 p-2 dark:bg-gray-800 bg-gray-100">
+        <textarea class="flex-1 p-2 dark:text-white bg-white dark:bg-gray-800" placeholder="Enter your testcases"
+            rows="5"></textarea>
+        <textarea class="flex-1 p-2 dark:text-white bg-white dark:bg-gray-800" placeholder="Output will be shown here"
+            rows="5"></textarea>
+    </div>
+</div>
 
 <style>
     .CodeMirror {
         height: 100vh;
         font-family: 'Fira Code, monospace';
-        font-size: 16px;
+        font-size: 14px;
     }
 
     div>.CodeMirror-code {
         font-family: monospace;
-        font-size: 16px;
+        font-size: 14px;
     }
 </style>
 
