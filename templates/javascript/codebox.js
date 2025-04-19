@@ -5,7 +5,7 @@ function codeboxInit() {
     const editor = CodeMirror.fromTextArea(document.querySelector('#codebox'), {
         lineNumbers: true,
         mode: { name: "python" },
-        theme: "hopscotch",
+        theme: "eclipse",
         font: "Fira Code, monospace",
         indent: 4,
         indentUnit: 4,

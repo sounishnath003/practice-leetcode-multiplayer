@@ -1,12 +1,30 @@
 "use strict";
 
-function codeboxInit() {
-    document.querySelector('#codebox').textContent = '# Write some code...';
+// Language-specific boilerplate code
+const languageBoilerplate = {
+    python: "# Write your Python code here...\n\nif __name__ == '__main__':\n    print('Hello, Python!')",
+    javascript: "// Write your JavaScript code here...\n\nconsole.log('Hello, JavaScript!');",
+    java: "// Write your Java code here...\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, Java!\");\n    }\n}",
+    c: "// Write your C code here...\n\n#include <stdio.h>\n\nint main() {\n    printf(\"Hello, C!\\n\");\n    return 0;\n}",
+    cpp: "// Write your C++ code here...\n\n#include <iostream>\n\nint main() {\n    std::cout << \"Hello, C++!\" << std::endl;\n    return 0;\n}",
+    go: "// Write your Go code here...\n\npackage main\n\nimport \"fmt\"\n\nfunc main() {\n    fmt.Println(\"Hello, Go!\")\n}",
+    ruby: "# Write your Ruby code here...\n\nputs 'Hello, Ruby!'",
+    php: "// Write your PHP code here...\n\n<?php\n    echo 'Hello, PHP!';\n?>",
+    rust: "// Write your Rust code here...\n\nfn main() {\n    println!(\"Hello, Rust!\");\n}",
+    default: "// Write your code here...",
+};
+
+function codeboxInit(language) {
+    const codeboxElement = document.querySelector('#codebox');
+    const boilerplate = languageBoilerplate[language?.toLowerCase()] || languageBoilerplate.default;
+
+    codeboxElement.innerHTML = boilerplate;
+
     // Initialize the codebox with CodeMirror
     const editor = CodeMirror.fromTextArea(document.querySelector('#codebox'), {
         lineNumbers: true,
-        mode: { name: "python" },
-        theme: "hopscotch",
+        mode: { name: language?.toLowerCase() ?? "python" },
+        theme: "eclipse",
         font: "Fira Code, monospace",
         indent: 4,
         indentUnit: 4,
@@ -19,6 +37,9 @@ function codeboxInit() {
         foldGutter: true,
         gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
         extraKeys: { "Alt-F": "findPersistent", "Cmd-/": 'toggleComment' },
+        hintOptions: {
+            completeSingle: false, // Prevent auto-selecting the first suggestion
+        },
     });
 
     return editor;
@@ -177,9 +198,18 @@ class WebSocketClient {
 
 function runWebsocketProcess() {
     const roomId = document.querySelector("span#roomId").textContent.trim();
-    const codeEditor = codeboxInit();
+    const codeEditor = codeboxInit("python");
 
     const wss = new WebSocketClient(roomId, codeEditor);
+
+    // Reload the code editor when the programming language changes
+    const languageSelector = document.querySelector('#programmingLanguages');
+
+    languageSelector.addEventListener('change', (event) => {
+        const selectedLanguage = event.target.value.toLowerCase();
+        codeboxInit(selectedLanguage); // Reinitialize with the new language
+    });
+
 }
 
 runWebsocketProcess();
