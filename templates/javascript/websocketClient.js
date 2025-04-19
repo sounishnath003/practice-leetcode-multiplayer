@@ -17,13 +17,15 @@ const languageBoilerplate = {
 function codeboxInit(language) {
     const codeboxElement = document.querySelector('#codebox');
     const boilerplate = languageBoilerplate[language?.toLowerCase()] || languageBoilerplate.default;
+    codeboxElement.textContent = boilerplate;
 
-    codeboxElement.innerHTML = boilerplate;
+    // If It is a JAVA then Clike language type.
+    language = language === 'java' ? 'clike' : language;
 
     // Initialize the codebox with CodeMirror
     const editor = CodeMirror.fromTextArea(document.querySelector('#codebox'), {
         lineNumbers: true,
-        mode: { name: language?.toLowerCase() ?? "python" },
+        mode: { name: language?.toLowerCase() ?? "clike" },
         theme: "eclipse",
         font: "Fira Code, monospace",
         indent: 4,
