@@ -14,16 +14,26 @@ const languageBoilerplate = {
     default: "// Write your code here...",
 };
 
+let currentEditor = null; // Keep track of the current CodeMirror editor instance
+
 function codeboxInit(language) {
     const codeboxElement = document.querySelector('#codebox');
-    const boilerplate = languageBoilerplate[language?.toLowerCase()] || languageBoilerplate.default;
-    codeboxElement.textContent = boilerplate;
 
-    // If It is a JAVA then Clike language type.
+    // Destroy the existing editor instance if it exists
+    if (currentEditor) {
+        currentEditor.toTextArea(); // Restore the original <textarea>
+        currentEditor = null;
+    }
+
+    // Set the boilerplate code for the selected language
+    const boilerplate = languageBoilerplate[language?.toLowerCase()] || languageBoilerplate.default;
+    codeboxElement.value = boilerplate; // Use `.value` to set the content of the <textarea>
+
+    // If the language is Java, use the "clike" mode
     language = language === 'java' ? 'clike' : language;
 
-    // Initialize the codebox with CodeMirror
-    const editor = CodeMirror.fromTextArea(document.querySelector('#codebox'), {
+    // Initialize the CodeMirror editor
+    currentEditor = CodeMirror.fromTextArea(codeboxElement, {
         lineNumbers: true,
         mode: { name: language?.toLowerCase() ?? "clike" },
         theme: "eclipse",
@@ -44,9 +54,8 @@ function codeboxInit(language) {
         },
     });
 
-    return editor;
+    return currentEditor;
 }
-
 
 class WebSocketClient {
     constructor(roomId, editor) {
@@ -200,18 +209,16 @@ class WebSocketClient {
 
 function runWebsocketProcess() {
     const roomId = document.querySelector("span#roomId").textContent.trim();
-    const codeEditor = codeboxInit("python");
+    let codeEditor = codeboxInit("python");
 
     const wss = new WebSocketClient(roomId, codeEditor);
 
     // Reload the code editor when the programming language changes
     const languageSelector = document.querySelector('#programmingLanguages');
-
     languageSelector.addEventListener('change', (event) => {
         const selectedLanguage = event.target.value.toLowerCase();
-        codeboxInit(selectedLanguage); // Reinitialize with the new language
+        codeEditor = codeboxInit(selectedLanguage); // Reinitialize with the new language
     });
-
 }
 
 runWebsocketProcess();
