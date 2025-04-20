@@ -1,0 +1,33 @@
+query questionTitle($titleSlug: String!) {
+    question(titleSlug: $titleSlug) {
+      questionId
+      questionFrontendId
+      title
+      titleSlug
+      content
+      codeSnippets {
+        lang
+        langSlug
+        code
+    }
+      isPaidOnly
+      difficulty
+      likes
+      dislikes
+      hints
+  }
+}
+{
+  "titleSlug": "two-sum"
+}
+
+// Equivalent REST Code - 
+
+curl -X POST https://leetcode.com/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "query questionTitle($titleSlug: String!) { question(titleSlug: $titleSlug) { questionId questionFrontendId title titleSlug content codeSnippets { lang langSlug code } isPaidOnly difficulty likes dislikes hints } }",
+  "variables": {
+    "titleSlug": "two-sum"
+  }
+}'
