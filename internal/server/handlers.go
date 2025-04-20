@@ -176,7 +176,7 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 	// Setting up the data
 	data := CollaborativeRoomPageData{
 		Title:                     "Practice Leetcode Multiplayer",
-		SupportedProgrammingLangs: []string{"Python3", "Java", "Javascript"},
+		SupportedProgrammingLangs: []string{"Python", "Java", "Javascript"},
 		Message:                   "Hello Sounish, Welcome to the Leetcode Practice Problems",
 		Room: RoomResponse{
 			RoomID:       roomID,

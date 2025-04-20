@@ -49,7 +49,7 @@ function codeboxInit(language) {
     // Initialize the CodeMirror editor
     currentEditor = CodeMirror.fromTextArea(codeboxElement, {
         lineNumbers: true,
-        mode: { name: language?.toLowerCase() ?? "python" },
+        mode: { name: language?.toLowerCase() ?? "clike" },
         theme: "eclipse",
         font: "Fira Code, monospace",
         indent: 4,

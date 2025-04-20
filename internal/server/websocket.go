@@ -105,7 +105,7 @@ func (r *Room) Run() {
 		select {
 		case client := <-r.Register:
 			r.mu.Lock()
-			if len(r.Clients) < 10000 {
+			if len(r.Clients) < 10 {
 				r.Clients[client] = true
 				// Send current state to new client
 				syncMsg := &WebSocketMessage{
