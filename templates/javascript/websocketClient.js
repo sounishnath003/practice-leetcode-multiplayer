@@ -18,7 +18,6 @@ let currentEditor = null; // Keep track of the current CodeMirror editor instanc
 
 function codeboxInit(language) {
     const codeboxElement = document.querySelector('#codebox');
-
     // Destroy the existing editor instance if it exists
     if (currentEditor) {
         currentEditor.toTextArea(); // Restore the original <textarea>
@@ -32,14 +31,14 @@ function codeboxInit(language) {
     let codeEditorSnippet = undefined;
     if (language === 'python') {
         codeEditorSnippet = document.querySelector("#codeSnippetCode #pythonSnippet");
-        boilerplate = codeEditorSnippet ? codeEditorSnippet.textContent : languageBoilerplate.python;
+        boilerplate = codeEditorSnippet.textContent;
     }
     else if (language === 'java') {
         codeEditorSnippet = document.querySelector("#codeSnippetCode #javaSnippet");
-        boilerplate = codeEditorSnippet ? codeEditorSnippet.textContent : languageBoilerplate.java;
+        boilerplate = codeEditorSnippet.textContent;
     } else if (language === 'javascript') {
         codeEditorSnippet = document.querySelector("#codeSnippetCode #javascriptSnippet");
-        boilerplate = codeEditorSnippet ? codeEditorSnippet.textContent : languageBoilerplate.javascript;
+        boilerplate = codeEditorSnippet.textContent;
     }
 
     codeboxElement.value = boilerplate; // Use `.value` to set the content of the <textarea>
@@ -50,7 +49,7 @@ function codeboxInit(language) {
     // Initialize the CodeMirror editor
     currentEditor = CodeMirror.fromTextArea(codeboxElement, {
         lineNumbers: true,
-        mode: { name: language?.toLowerCase() ?? "clike" },
+        mode: { name: language?.toLowerCase() ?? "python" },
         theme: "eclipse",
         font: "Fira Code, monospace",
         indent: 4,
@@ -69,8 +68,6 @@ function codeboxInit(language) {
         },
     });
 
-    currentEditor.setValue(boilerplate);
-
     return currentEditor;
 }
 
@@ -86,12 +83,11 @@ class WebSocketClient {
         this.joinedUserElement = document.querySelector('#joinedUser');
 
         this.wss.addEventListener('open', (e) => {
-            console.log('websocket.connection.open', e);
+            console.log('WebSocket connection opened:', e);
         });
 
         this.wss.addEventListener('message', (e) => {
             const message = JSON.parse(e.data);
-            console.log(message);
 
             this.user_id = message.user_id;
             this.role = message.role;
@@ -109,7 +105,7 @@ class WebSocketClient {
                 this.editor.setCursor(currentCursor);
             }
 
-            // Update the problemTitle and problemDescription Div
+            // Update the problem title and description
             if (message.problem_title) {
                 this.#updateProblemTitle(message.problem_title);
             }
@@ -119,10 +115,7 @@ class WebSocketClient {
         });
 
         this.wss.addEventListener('close', () => {
-            this.showNotification('Connection closed. Attempting to reconnect...', 'error');
-            setTimeout(() => {
-                this.wss = new WebSocket(`ws://localhost:3000/ws?room_id=${roomId}`);
-            }, 3000);
+            this.showNotification('WebSocket connection closed.', 'error');
         });
 
         // Handle editor changes
@@ -191,7 +184,7 @@ class WebSocketClient {
         return questionTitle;
     }
     #updateProblemTitle(updatedProblemTitle) {
-        const questionTitle = document.querySelector("h2 #questionTitle");
+        const questionTitle = document.querySelector("h2#questionTitle");
         if (questionTitle) {
             questionTitle.textContent = updatedProblemTitle;
         }
@@ -228,17 +221,27 @@ class WebSocketClient {
 
 function runWebsocketProcess() {
     const roomId = document.querySelector("span#roomId").textContent.trim();
-    let codeEditor = codeboxInit();
+    let codeEditor = codeboxInit(); // Initialize with the default language
 
-    const wss = new WebSocketClient(roomId, codeEditor);
+    // Initialize WebSocket connection
+    let wss = new WebSocketClient(roomId, codeEditor);
 
-    // Reload the code editor when the programming language changes
+    // Reload the code editor and WebSocket connection when the programming language changes
     const languageSelector = document.querySelector('#programmingLanguages');
     languageSelector.addEventListener('change', (event) => {
         const selectedLanguage = event.target.value.toLowerCase();
-        codeEditor = codeboxInit(selectedLanguage); // Reinitialize with the new language
-    });
 
+        // Destroy the existing WebSocket connection
+        if (wss && wss.wss.readyState === WebSocket.OPEN) {
+            wss.wss.close(); // Close the WebSocket connection
+        }
+
+        // Reinitialize the editor with the new language
+        codeEditor = codeboxInit(selectedLanguage);
+
+        // Reinitialize the WebSocket connection with the new editor
+        wss = new WebSocketClient(roomId, codeEditor);
+    });
 }
 
 runWebsocketProcess();

@@ -88,8 +88,8 @@ func CreateRoom(roomID string) *Room {
 		ID:         roomID,
 		Clients:    make(map[*Client]bool),
 		Broadcast:  make(chan *WebSocketMessage, 100), // Buffered channel
-		Register:   make(chan *Client, 2),
-		Unregister: make(chan *Client, 2),
+		Register:   make(chan *Client, 5),
+		Unregister: make(chan *Client, 5),
 		CreatedAt:  time.Now(),
 	}
 	go room.Run()
@@ -105,7 +105,7 @@ func (r *Room) Run() {
 		select {
 		case client := <-r.Register:
 			r.mu.Lock()
-			if len(r.Clients) < 2 {
+			if len(r.Clients) < 10000 {
 				r.Clients[client] = true
 				// Send current state to new client
 				syncMsg := &WebSocketMessage{
