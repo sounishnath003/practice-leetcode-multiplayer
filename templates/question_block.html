@@ -1,54 +1,61 @@
 {{block "QuestionBlock" . }}
 
-<div id="questionBlock"
-    class="flex flex-col gap-4 dark:text-white max-w-[520px] overflow-y-scroll text-nowrap mx-1 my-2">
-    <h2 class="text-3xl" id="questionTitle"> {{.Title}} </h2>
-    <div class="flex flex-items gap-1 text-md">
 
-        {{if eq .Difficulty "Easy"}}
-        <div class="text-md bg-green-100 text-green-700 px-2 rounded-lg dark:bg-gray-700">
-            {{.Difficulty}} </div>
-        {{else if eq .Difficulty "Medium"}}
-        <div class="text-md bg-amber-100 text-amber-700 px-2 rounded-lg dark:bg-gray-700">
-            {{.Difficulty}} </div>
-        {{else if eq .Difficulty "Hard"}}
-        <div class="text-md bg-red-100 text-red-700 px-2 rounded-lg dark:bg-gray-700">
-            {{.Difficulty}} </div>
-
-        {{end}}
-
-        {{ if .Likes }}
-        <div class="dark:text-white text-sm font-medium">
-            | {{.Likes}}+ 👍
-            | <a class="underline dark:text-white" href="{{.ProblemLink}}" target="_blank">
-                Leetcode Link </a>
-        </div>
-        {{end}}
+    {{ if .Error }}
+    <div class="flex min-h-screen flex-col m-auto items-center justify-center">
+        <div class="text-red-700 text-sm font-medium text-center p-3 rounded-lg bg-red-50 "> {{.Error}} </div>
     </div>
+    {{ else }}
 
-    <div class="tracking-normal text-content text-sm text-balance" id="problemDescription">
-        {{ .Description}}
-    </div>
+        <div id="questionBlock"
+            class="flex flex-col gap-4 dark:text-white max-w-[520px] overflow-y-scroll text-wrap mx-1 my-2">
 
-    {{ if .Hints }}
-    <div class="text-xs text-wrap w-full">
-        <h2 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Hints:</h2>
-        <ul class="max-w-md space-y-1 text-gray-700 list-disc list-inside dark:text-gray-200">
-            {{ range .Hints}}
-            <li>{{ . }}</li>
+            <h2 class="text-3xl" id="questionTitle"> {{.Title}} </h2>
+            <div class="flex flex-items gap-1 text-md">
+
+                {{if eq .Difficulty "Easy"}}
+                <div class="text-md bg-green-100 text-green-700 px-2 rounded-lg dark:bg-gray-700">
+                    {{.Difficulty}} </div>
+                {{else if eq .Difficulty "Medium"}}
+                <div class="text-md bg-amber-100 text-amber-700 px-2 rounded-lg dark:bg-gray-700">
+                    {{.Difficulty}} </div>
+                {{else if eq .Difficulty "Hard"}}
+                <div class="text-md bg-red-100 text-red-700 px-2 rounded-lg dark:bg-gray-700">
+                    {{.Difficulty}} </div>
+
+                {{end}}
+
+                {{ if .Likes }}
+                <div class="dark:text-white text-sm font-medium">
+                    | {{.Likes}}+ 👍
+                    | <a class="underline dark:text-white" href="{{.ProblemLink}}" target="_blank">
+                        Leetcode Link </a>
+                </div>
+                {{end}}
+            </div>
+
+            <div class="tracking-normal text-content text-sm text-balance" id="problemDescription">
+                {{ .Description}}
+            </div>
+
+            {{ if .Hints }}
+            <div class="text-xs text-wrap w-full">
+                <h2 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Hints:</h2>
+                <ul class="max-w-md space-y-1 text-gray-700 list-disc list-inside dark:text-gray-200">
+                    {{ range .Hints}}
+                    <li>{{ . }}</li>
+                    {{ end }}
+                </ul>
+            </div>
             {{ end }}
-        </ul>
-    </div>
+
+            {{ if .ProblemLink }}
+            <a class="underline text-sm dark:text-white" href="{{.ProblemLink}}" target="_blank">
+                Leetcode Link </a>
+            {{ end }}
+
+            <div id="codeSnippetCode" class="hidden"> {{ .CodeEditorCode }} </div>
+        </div>
     {{ end }}
-
-    {{ if .ProblemLink }}
-    <a class="underline text-sm dark:text-white" href="{{.ProblemLink}}" target="_blank">
-        Leetcode Link </a>
-    {{ end }}
-
-
-    <div id="codeSnippetCode" class="hidden"> {{ .CodeEditorCode }} </div>
-
-</div>
 
 {{ end }}

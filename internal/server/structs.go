@@ -27,6 +27,7 @@ type QuestionData struct {
 	Hints            []string
 	Likes            int64
 	AskedInCompanies []string
+	Error            string
 }
 
 // GraphQLRequest represents the structure of a GraphQL request

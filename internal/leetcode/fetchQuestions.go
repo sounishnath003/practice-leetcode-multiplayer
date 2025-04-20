@@ -72,6 +72,12 @@ func FetchQuestionByTitleSlugFromLeetcodeGql(titleSlug string) (GraphQLResponse,
 	if err := json.Unmarshal(body, &graphqlResponse); err != nil {
 		return GraphQLResponse{}, fmt.Errorf("failed to parse response from leetcode")
 	}
+	// Check if the response contains valid data
+	if graphqlResponse.Data.Question.QuestionID == "" {
+		return GraphQLResponse{}, fmt.Errorf(
+			"slug not found: `%s`; empty response from leetcode API", titleSlug,
+		)
+	}
 
 	// Check for errors in the GraphQL response
 	if len(graphqlResponse.Errors) > 0 {

@@ -79,10 +79,10 @@ func SearchQuestionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	graphQLOutput, err := leetcode.FetchQuestionByTitleSlugFromLeetcodeGql(questionSlug)
-	if err != nil {
-		SendErrorResponse(w, http.StatusInternalServerError, err)
-		return
-	}
+	// if err != nil {
+	// 	SendErrorResponse(w, http.StatusInternalServerError, err)
+	// 	return
+	// }
 
 	data := QuestionData{
 		Title:            graphQLOutput.Data.Question.Title,
@@ -93,6 +93,10 @@ func SearchQuestionHandler(w http.ResponseWriter, r *http.Request) {
 		Hints:            graphQLOutput.Data.Question.Hints,
 		ProblemLink:      fmt.Sprintf(`https://leetcode.com/problems/%s`, graphQLOutput.Data.Question.TitleSlug),
 		AskedInCompanies: []string{"Microsoft", "Intuit", "Amazon"},
+	}
+
+	if err != nil {
+		data.Error = err.Error()
 	}
 
 	if err := tmpl.ExecuteTemplate(w, "QuestionBlock", data); err != nil {
