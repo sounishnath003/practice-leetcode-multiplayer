@@ -11,7 +11,7 @@ const languageBoilerplate = {
     ruby: "# Write your Ruby code here...\n\nputs 'Hello, Ruby!'",
     php: "// Write your PHP code here...\n\n<?php\n    echo 'Hello, PHP!';\n?>",
     rust: "// Write your Rust code here...\n\nfn main() {\n    println!(\"Hello, Rust!\");\n}",
-    default: "// Write your code here...",
+    default: "// Write your code here...\n// You can select language to get the starter snippet from leetcode...\n// Start typing the 'QuestionSlug: two-sum' from leetcode, to load the question information",
 };
 
 let currentEditor = null; // Keep track of the current CodeMirror editor instance
@@ -26,7 +26,22 @@ function codeboxInit(language) {
     }
 
     // Set the boilerplate code for the selected language
-    const boilerplate = languageBoilerplate[language?.toLowerCase()] || languageBoilerplate.default;
+    let boilerplate = languageBoilerplate[language?.toLowerCase()] || languageBoilerplate.default;
+
+    // Check the Selected Language boiler plate
+    let codeEditorSnippet = undefined;
+    if (language === 'python') {
+        codeEditorSnippet = document.querySelector("#codeSnippetCode #pythonSnippet");
+        boilerplate = codeEditorSnippet ? codeEditorSnippet.textContent : languageBoilerplate.python;
+    }
+    else if (language === 'java') {
+        codeEditorSnippet = document.querySelector("#codeSnippetCode #javaSnippet");
+        boilerplate = codeEditorSnippet ? codeEditorSnippet.textContent : languageBoilerplate.java;
+    } else if (language === 'javascript') {
+        codeEditorSnippet = document.querySelector("#codeSnippetCode #javascriptSnippet");
+        boilerplate = codeEditorSnippet ? codeEditorSnippet.textContent : languageBoilerplate.javascript;
+    }
+
     codeboxElement.value = boilerplate; // Use `.value` to set the content of the <textarea>
 
     // If the language is Java, use the "clike" mode
@@ -209,7 +224,7 @@ class WebSocketClient {
 
 function runWebsocketProcess() {
     const roomId = document.querySelector("span#roomId").textContent.trim();
-    let codeEditor = codeboxInit("python");
+    let codeEditor = codeboxInit();
 
     const wss = new WebSocketClient(roomId, codeEditor);
 
@@ -219,6 +234,7 @@ function runWebsocketProcess() {
         const selectedLanguage = event.target.value.toLowerCase();
         codeEditor = codeboxInit(selectedLanguage); // Reinitialize with the new language
     });
+
 }
 
 runWebsocketProcess();

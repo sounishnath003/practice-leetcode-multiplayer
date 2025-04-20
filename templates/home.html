@@ -38,6 +38,7 @@
 
     <select id="programmingLanguages"
         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+        <option value="select language">Choose Language</option>
         {{ range .SupportedProgrammingLangs }}
         <option value="{{ . }}"> {{.}} </option>
         {{ end }}
@@ -45,7 +46,7 @@
 
     <!-- run code button -->
     <div><button
-            class="min-w-full text-white cursor-pointer bg-red-700 hover:bg-red-800 dark:bg-red-600 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-xs px-2 py-1 py-2.5 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
+            class="min-w-full text-white cursor-pointer bg-red-700 hover:bg-red-800 dark:bg-red-600 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-xs p-1 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
             type="submit">Run code</button></div>
 
 </div>

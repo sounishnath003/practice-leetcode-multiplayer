@@ -85,14 +85,16 @@ func SearchQuestionHandler(w http.ResponseWriter, r *http.Request) {
 	// }
 
 	data := QuestionData{
-		Title:            graphQLOutput.Data.Question.Title,
-		Description:      template.HTML(graphQLOutput.Data.Question.Content),
-		Difficulty:       graphQLOutput.Data.Question.Difficulty,
-		CodeEditorCode:   graphQLOutput.Data.Question.CodeSnippetsMap["python3"].Code,
-		Likes:            graphQLOutput.Data.Question.Likes,
-		Hints:            graphQLOutput.Data.Question.Hints,
-		ProblemLink:      fmt.Sprintf(`https://leetcode.com/problems/%s`, graphQLOutput.Data.Question.TitleSlug),
-		AskedInCompanies: []string{"Microsoft", "Intuit", "Amazon"},
+		Title:                 graphQLOutput.Data.Question.Title,
+		Description:           template.HTML(graphQLOutput.Data.Question.Content),
+		Difficulty:            graphQLOutput.Data.Question.Difficulty,
+		PythonCodeSnippet:     graphQLOutput.Data.Question.CodeSnippetsMap["python3"].Code,
+		JavaCodeSnippet:       graphQLOutput.Data.Question.CodeSnippetsMap["java"].Code,
+		JavascriptCodeSnippet: graphQLOutput.Data.Question.CodeSnippetsMap["javascript"].Code,
+		Likes:                 graphQLOutput.Data.Question.Likes,
+		Hints:                 graphQLOutput.Data.Question.Hints,
+		ProblemLink:           fmt.Sprintf(`https://leetcode.com/problems/%s`, graphQLOutput.Data.Question.TitleSlug),
+		AskedInCompanies:      []string{"Microsoft", "Intuit", "Amazon"},
 	}
 
 	if err != nil {
@@ -174,7 +176,7 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 	// Setting up the data
 	data := CollaborativeRoomPageData{
 		Title:                     "Practice Leetcode Multiplayer",
-		SupportedProgrammingLangs: []string{"Python", "Java", "Javascript"},
+		SupportedProgrammingLangs: []string{"Python3", "Java", "Javascript"},
 		Message:                   "Hello Sounish, Welcome to the Leetcode Practice Problems",
 		Room: RoomResponse{
 			RoomID:       roomID,

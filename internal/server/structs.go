@@ -19,15 +19,17 @@ type CollaborativeRoomPageData struct {
 }
 
 type QuestionData struct {
-	Title            string
-	Description      template.HTML
-	Difficulty       string
-	CodeEditorCode   string
-	ProblemLink      string
-	Hints            []string
-	Likes            int64
-	AskedInCompanies []string
-	Error            string
+	Title             string
+	Description       template.HTML
+	Difficulty        string
+	PythonCodeSnippet string
+	JavaCodeSnippet string
+	JavascriptCodeSnippet string
+	ProblemLink       string
+	Hints             []string
+	Likes             int64
+	AskedInCompanies  []string
+	Error             string
 }
 
 // GraphQLRequest represents the structure of a GraphQL request
