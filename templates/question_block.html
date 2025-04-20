@@ -17,14 +17,37 @@
 
         {{end}}
 
-        {{ if .AskedInCompanies }}
-        <div> | {{.AskedInCompanies}} </div>
+        {{ if .Likes }}
+        <div class="dark:text-white text-sm font-medium">
+            | {{.Likes}}+ 👍
+            | <a class="underline dark:text-white" href="{{.ProblemLink}}" target="_blank">
+                Leetcode Link </a>
+        </div>
         {{end}}
     </div>
 
     <div class="tracking-normal text-content text-sm text-balance" id="problemDescription">
         {{ .Description}}
     </div>
+
+    {{ if .Hints }}
+    <div class="text-xs text-wrap w-full">
+        <h2 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Hints:</h2>
+        <ul class="max-w-md space-y-1 text-gray-700 list-disc list-inside dark:text-gray-200">
+            {{ range .Hints}}
+            <li>{{ . }}</li>
+            {{ end }}
+        </ul>
+    </div>
+    {{ end }}
+
+    {{ if .ProblemLink }}
+    <a class="underline text-sm dark:text-white" href="{{.ProblemLink}}" target="_blank">
+        Leetcode Link </a>
+    {{ end }}
+
+
+    <div id="codeSnippetCode" class="hidden"> {{ .CodeEditorCode }} </div>
 
 </div>
 

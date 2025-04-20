@@ -22,6 +22,10 @@ type QuestionData struct {
 	Title            string
 	Description      template.HTML
 	Difficulty       string
+	CodeEditorCode   string
+	ProblemLink      string
+	Hints            []string
+	Likes            int64
 	AskedInCompanies []string
 }
 
