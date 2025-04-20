@@ -8,7 +8,8 @@ import (
 )
 
 // Github References: https://github.com/akarsh1995/leetcode-graphql-queries/blob/main/problemset_page/problemset_page.graphql
-// Kudos to @Author: https://github.com/akarsh1995/
+//
+// Kudos to @Author https://github.com/akarsh1995/
 // Who has wrote the GraphQL queries from leetcode
 // FetchQuestionByTitleSlugFromLeetcodeGql fetches the question details from LeetCode using the titleSlug
 func FetchQuestionByTitleSlugFromLeetcodeGql(w http.ResponseWriter, r *http.Request) {
