@@ -69,6 +69,8 @@ function codeboxInit(language) {
         },
     });
 
+    currentEditor.setValue(boilerplate);
+
     return currentEditor;
 }
 
@@ -89,6 +91,8 @@ class WebSocketClient {
 
         this.wss.addEventListener('message', (e) => {
             const message = JSON.parse(e.data);
+            console.log(message);
+
             this.user_id = message.user_id;
             this.role = message.role;
 
@@ -139,7 +143,7 @@ class WebSocketClient {
 
     showNotification(message, type = 'info') {
         const notification = document.createElement('div');
-        const baseClasses = 'px-4 py-2 rounded-lg shadow-lg text-white transform transition-all duration-300';
+        const baseClasses = 'px-4 py-2 rounded-lg shadow-lg text-white transform transition-all duration-300 bottom-0 text-xs';
         const typeClasses = {
             success: 'bg-green-500',
             warning: 'bg-yellow-500',
@@ -187,7 +191,7 @@ class WebSocketClient {
         return questionTitle;
     }
     #updateProblemTitle(updatedProblemTitle) {
-        const questionTitle = document.querySelector("h2#questionTitle");
+        const questionTitle = document.querySelector("h2 #questionTitle");
         if (questionTitle) {
             questionTitle.textContent = updatedProblemTitle;
         }
