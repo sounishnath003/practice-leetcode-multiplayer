@@ -19,6 +19,20 @@ This project is a multiplayer platform for practicing Leetcode problems. It allo
 - **Chat**: Communicate with teammates using an integrated chat system.
 - **Code Editor**: Solve problems with a simple and intuitive code editor.
 
+## UI Screens:
+
+### Create room or Join room:
+
+![signin](assets/signin.png)
+
+### Collaborative Join (If Room doesn't exist):
+
+![wrongroom](assets/wrongroom.png)
+
+### Multiplayer Screen:
+
+![multiplayer](assets/multiplayer.png)
+
 ## Getting Started
 
 1. Clone the repository:
