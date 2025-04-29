@@ -6,6 +6,7 @@ Deployed on "Google Cloud Functions"
 Supports Language: CPP, Java, NodeJS, Python, Go
 ===================================================
 """
+"""Code a Efficient Code Runner Engine"""
 
 import os
 import base64
@@ -17,11 +18,16 @@ from dataclasses import dataclass
 from typing import Optional
 from contextlib import contextmanager
 
+import flask
+import flask.typing
+import functions_framework
+
 # Constants :
 SAMPLE_PY_CODE = """# Hello world program in python3.
 def main():
+    inputs=input("enter your code:")
     for i in range(4):
-        print("Hello World!!", i)
+        print(f"User input {i=} val=HelloWorld {inputs=}")
 
 main()
 """
@@ -32,6 +38,18 @@ using namespace std;
 int main() {
     cout << "Hello world! :-)" << endl;
     return 0;
+}
+"""
+
+SAMPLE_GO_CODE="""
+package main
+
+import (
+"fmt"
+)
+
+func main() {
+    fmt.Println("Hello world!, from Golang")
 }
 """
 
@@ -104,8 +122,7 @@ LANGUAGE_CONFIG = {
     "go": LanguageConfig(
         language="go",
         filename="solution.go", 
-        compile_command=["go", "build", "-o", "solution"],
-        execute_command=["./solution"]
+        execute_command=["go", "run"]
     )
 }
 
@@ -197,12 +214,19 @@ def execute_code(language: str, codeb64encoded: str, stdin: str) -> Optional[Cod
             os.rmdir(temp_dir)
 
 def main():
-    output = execute_code("python", encode_to_base64(SAMPLE_PY_CODE), "")
+    output = execute_code("python", encode_to_base64(SAMPLE_PY_CODE), "1 2 3")
     print(output)
     output = execute_code("cpp", encode_to_base64(SAMPLE_CPP_CODE), "")
     print(output)
     output = execute_code("nodejs", encode_to_base64(SAMPLE_NODE_CODE), "")
     print(output)
+    output = execute_code("go", encode_to_base64(SAMPLE_GO_CODE), "")
+    print(output)
+
+@functions_framework.http
+def main_function_handler(request:flask.Request) -> flask.typing.ResponseReturnValue:
+    return "Hello World, from sounish-code-execution-engine"
 
 if __name__ == "__main__":
     main()
+    main_function_handler(None)

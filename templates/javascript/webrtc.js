@@ -1,4 +1,4 @@
-class WebRTCHandler {
+gtclass WebRTCHandler {
     constructor(roomId, userId, ws) {
         this.roomId = roomId;
         this.userId = userId;
