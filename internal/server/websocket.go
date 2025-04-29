@@ -26,6 +26,10 @@ const (
 	TypeSync  MessageType = "sync"
 	TypeLeave MessageType = "leave"
 	TypeError MessageType = "error"
+	// WebRTC signaling message types
+	TypeOffer        MessageType = "offer"
+	TypeAnswer       MessageType = "answer"
+	TypeIceCandidate MessageType = "ice-candidate"
 )
 
 // WebSocketMessage represents the structure of messages
@@ -37,6 +41,10 @@ type WebSocketMessage struct {
 	ProblemDescription string      `json:"problem_description"`
 	UserID             string      `json:"user_id"`
 	Role               string      `json:"role"`
+	// WebRTC specific fields
+	TargetUserID string      `json:"target_user_id,omitempty"`
+	SDP          interface{} `json:"sdp,omitempty"`
+	IceCandidate interface{} `json:"ice_candidate,omitempty"`
 }
 
 // Room represents a WebSocket room with a maximum of 2 participants
@@ -253,7 +261,6 @@ func (c *Client) readPump() {
 
 	for {
 		_, message, err := c.Conn.ReadMessage()
-		// log.Printf("websocket.message.received.in.gobackend: %s", string(message))
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("error: %v", err)
@@ -266,7 +273,22 @@ func (c *Client) readPump() {
 			continue
 		}
 		msg.UserID = c.UserID
-		c.Room.Broadcast <- &msg
+
+		// Handle WebRTC signaling messages
+		if msg.Type == TypeOffer || msg.Type == TypeAnswer || msg.Type == TypeIceCandidate {
+			// Find target client in the room
+			c.Room.mu.RLock()
+			for client := range c.Room.Clients {
+				if client.UserID == msg.TargetUserID {
+					client.SendChan <- &msg
+					break
+				}
+			}
+			c.Room.mu.RUnlock()
+		} else {
+			// Broadcast other messages to all clients in the room
+			c.Room.Broadcast <- &msg
+		}
 	}
 }
 
