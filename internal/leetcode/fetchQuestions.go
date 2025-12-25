@@ -2,10 +2,12 @@ package leetcode
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 // Github References: https://github.com/akarsh1995/leetcode-graphql-queries/blob/main/problemset_page/problemset_page.graphql
@@ -13,7 +15,7 @@ import (
 // Kudos to @Author https://github.com/akarsh1995/
 // Who has wrote the GraphQL queries from leetcode
 // FetchQuestionByTitleSlugFromLeetcodeGql fetches the question details from LeetCode using the titleSlug
-func FetchQuestionByTitleSlugFromLeetcodeGql(titleSlug string) (GraphQLResponse, error) {
+func FetchQuestionByTitleSlugFromLeetcodeGql(ctx context.Context, titleSlug string) (GraphQLResponse, error) {
 	// Get the titleSlug from the query parameters
 	if titleSlug == "" {
 		fmt.Println("[LeetcodeGQL] Error: titleslug is empty")
@@ -58,10 +60,21 @@ func FetchQuestionByTitleSlugFromLeetcodeGql(titleSlug string) (GraphQLResponse,
 	}
 	fmt.Println("[LeetcodeGQL] JSON marshaled successfully. Sending POST request to LeetCode GraphQL endpoint.")
 
-	// Make the HTTP POST request to the LeetCode GraphQL API
-	resp, err := http.Post("https://leetcode.com/graphql", "application/json", bytes.NewBuffer(requestBody))
+	// Create request with context
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://leetcode.com/graphql", bytes.NewBuffer(requestBody))
 	if err != nil {
-		fmt.Printf("[LeetcodeGQL] Error in POST request: %v\n", err)
+		return GraphQLResponse{}, fmt.Errorf("failed to create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	// Use a client with a timeout
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("[LeetcodeGQL] Error in request: %v\n", err)
 		return GraphQLResponse{}, fmt.Errorf("failed to fetch question from leetcode")
 	}
 	defer resp.Body.Close()

@@ -1,10 +1,12 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -113,11 +115,26 @@ func SearchQuestionHandler(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, http.StatusBadRequest, ErrorSlug)
 		return
 	}
-	graphQLOutput, err := leetcode.FetchQuestionByTitleSlugFromLeetcodeGql(questionSlug)
-	// if err != nil {
-	// 	SendErrorResponse(w, http.StatusInternalServerError, err)
-	// 	return
-	// }
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	graphQLOutput, err := leetcode.FetchQuestionByTitleSlugFromLeetcodeGql(ctx, questionSlug)
+	if err != nil {
+		data := QuestionData{Error: "Failed to fetch question: " + err.Error()}
+		if err := tmpl.ExecuteTemplate(w, "QuestionBlock", data); err != nil {
+			SendErrorResponse(w, http.StatusInternalServerError, err)
+		}
+		return
+	}
+
+	if graphQLOutput.Data.Question.Title == "" {
+		data := QuestionData{Error: "Question not found for slug: " + questionSlug}
+		if err := tmpl.ExecuteTemplate(w, "QuestionBlock", data); err != nil {
+			SendErrorResponse(w, http.StatusInternalServerError, err)
+		}
+		return
+	}
 
 	data := QuestionData{
 		Title:                 graphQLOutput.Data.Question.Title,
@@ -203,7 +220,7 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 	clientCount := len(room.Clients)
 	room.mu.RUnlock()
 
-	if clientCount >= 10 {
+	if clientCount >= 2 {
 		SendErrorResponse(w, http.StatusConflict, ErrRoomFullMsg)
 		return
 	}
