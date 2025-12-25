@@ -150,7 +150,7 @@ const languageBoilerplate = {
 
 let currentEditor = null; // Keep track of the current CodeMirror editor instance
 
-function codeboxInit(language) {
+function codeboxInit(language, cachedContent) {
     const codeboxElement = document.querySelector('#codebox');
     // Destroy the existing editor instance if it exists
     if (currentEditor) {
@@ -165,27 +165,28 @@ function codeboxInit(language) {
     let codeEditorSnippet = undefined;
     if (language === 'python') {
         codeEditorSnippet = document.querySelector("#codeSnippetCode #pythonSnippet");
-        boilerplate = codeEditorSnippet.textContent;
+        if (codeEditorSnippet) boilerplate = codeEditorSnippet.textContent;
     }
     else if (language === 'java') {
         codeEditorSnippet = document.querySelector("#codeSnippetCode #javaSnippet");
-        boilerplate = codeEditorSnippet.textContent;
+        if (codeEditorSnippet) boilerplate = codeEditorSnippet.textContent;
     } else if (language === 'javascript') {
         codeEditorSnippet = document.querySelector("#codeSnippetCode #javascriptSnippet");
-        boilerplate = codeEditorSnippet.textContent;
+        if (codeEditorSnippet) boilerplate = codeEditorSnippet.textContent;
     }
 
-    codeboxElement.value = boilerplate; // Use `.value` to set the content of the <textarea>
+    // Use cached content if available, otherwise use boilerplate
+    codeboxElement.value = cachedContent !== undefined ? cachedContent : boilerplate;
 
     // If the language is Java, use the "clike" mode
-    language = language === 'java' ? 'clike' : language;
+    language = language === 'java' ? 'text/x-java' : language;
 
     // Initialize the CodeMirror editor
     currentEditor = CodeMirror.fromTextArea(codeboxElement, {
         lineNumbers: true,
-        mode: { name: language?.toLowerCase() ?? "clike" },
+        mode: { name: language?.toLowerCase() ?? "text/x-java" },
         theme: "eclipse",
-        font: "Fira Code, monospace",
+        font: "Fira Codee, Consolas, Monaco, 'Lucida Console', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace",
         indent: 4,
         indentUnit: 4,
         smartIndent: true,
@@ -196,7 +197,8 @@ function codeboxInit(language) {
         matchBrackets: true,
         foldGutter: true,
         gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
-        extraKeys: { "Alt-F": "findPersistent", "Cmd-/": 'toggleComment' },
+        // extraKeys: { "Alt-F": "findPersistent", "Cmd-/": 'toggleComment' },
+        extraKeys: { 'Ctrl-/': 'toggleComment', 'Cmd-/': 'toggleComment' },
         hintOptions: {
             completeSingle: false, // Prevent auto-selecting the first suggestion
         },
@@ -206,9 +208,10 @@ function codeboxInit(language) {
 }
 
 class WebSocketClient {
-    constructor(roomId, editor) {
+    constructor(roomId, editor, onLanguageChange) {
         this.roomId = roomId;
         this.editor = editor;
+        this.onLanguageChange = onLanguageChange;
         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
         this.wss = new WebSocket(`${protocol}://${window.location.host}/ws?room_id=${roomId}`);
         this.user_id = undefined;
@@ -217,6 +220,19 @@ class WebSocketClient {
         this.notificationContainer = this.createNotificationContainer();
         this.joinedUserElement = document.querySelector('#joinedUser');
         this.webrtcHandler = null;
+
+        // Question block observer
+        this.questionBlock = document.getElementById('questionBlock');
+        this.observer = null;
+        this.setupQuestionObserver();
+
+        // Listen for HTMX swaps to re-attach observer and sync new content
+        document.body.addEventListener('htmx:afterSwap', (event) => {
+            // Re-setup observer regardless of target, just to be safe if questionBlock was affected
+            this.setupQuestionObserver();
+            // Trigger sync to share the new question details
+            this.#sendCode(this.editor.getValue());
+        });
 
         this.wss.addEventListener('open', (e) => {
             console.log('WebSocket connection opened:', e);
@@ -253,20 +269,36 @@ class WebSocketClient {
                 if (this.webrtcHandler) {
                     this.webrtcHandler.disconnect();
                 }
+            } else if (message.type === 'language_change') {
+                if (this.onLanguageChange) {
+                    this.onLanguageChange(message.language);
+                }
             } else if (message.type === 'code') {
                 // Update editor content without triggering change event
                 const currentCursor = this.editor.getCursor();
                 this.editor.setValue(message.content);
                 this.editor.setCursor(currentCursor);
+            } else if (message.type === 'sync') {
+                // Sync initial state
+                if (message.language && this.onLanguageChange) {
+                    this.onLanguageChange(message.language);
+                }
+                if (message.content) {
+                    this.editor.setValue(message.content);
+                }
+                if (message.problem_title) this.updateProblemTitle(message.problem_title);
+                if (message.problem_description) this.updateProblemDescription(message.problem_description);
+                if (message.question_meta) this.updateQuestionMeta(message.question_meta);
+                if (message.question_hints) this.updateQuestionHints(message.question_hints);
+                if (message.question_snippets) this.updateQuestionSnippets(message.question_snippets);
             }
 
-            // Update the problem title and description
-            if (message.problem_title) {
-                this.updateProblemTitle(message.problem_title);
-            }
-            if (message.problem_description) {
-                this.updateProblemDescription(message.problem_description);
-            }
+            // Granular updates for question details
+            if (message.problem_title) this.updateProblemTitle(message.problem_title);
+            if (message.problem_description) this.updateProblemDescription(message.problem_description);
+            if (message.question_meta) this.updateQuestionMeta(message.question_meta);
+            if (message.question_hints) this.updateQuestionHints(message.question_hints);
+            if (message.question_snippets) this.updateQuestionSnippets(message.question_snippets);
         });
 
         this.wss.addEventListener('close', () => {
@@ -286,6 +318,42 @@ class WebSocketClient {
 
         // Create audio controls
         this.createAudioControls();
+    }
+
+    setupQuestionObserver() {
+        this.questionBlock = document.getElementById('questionBlock');
+        if (this.questionBlock) {
+            // Disconnect existing observer if any
+            if (this.observer) this.observer.disconnect();
+
+            this.observer = new MutationObserver((mutations) => {
+                // Check if the mutation is relevant to avoid infinite loops
+                // (Though with granular updates, loops are less likely if we check content equality, 
+                // but simplicity first: just send if it's a DOM change we didn't cause? 
+                // Actually, since we update innerHTML of children, that triggers observer.
+                // We need to temporarily disconnect observer during updates or use a flag.)
+                this.#sendCode(this.editor.getValue());
+            });
+
+            this.observer.observe(this.questionBlock, {
+                childList: true,
+                subtree: true,
+                characterData: true
+            });
+        }
+    }
+
+    // Flag to prevent observer loops during remote updates
+    isRemoteUpdate = false;
+
+    updateEditor(newEditor) {
+        this.editor = newEditor;
+        this.editor.on('change', (cm, change) => {
+            if (change.origin !== 'setValue') {
+                const content = cm.getValue();
+                this.#sendCode(content);
+            }
+        });
     }
 
     createNotificationContainer() {
@@ -326,8 +394,20 @@ class WebSocketClient {
         }, 3000);
     }
 
-    #sendCode(content) {
+    sendLanguageChange(language) {
         if (this.wss.readyState === WebSocket.OPEN) {
+            const message = {
+                type: 'language_change',
+                room_id: this.roomId,
+                user_id: this.user_id,
+                language: language
+            };
+            this.wss.send(JSON.stringify(message));
+        }
+    }
+
+    #sendCode(content) {
+        if (this.wss.readyState === WebSocket.OPEN && !this.isRemoteUpdate) {
             const message = {
                 type: 'code',
                 room_id: this.roomId,
@@ -335,37 +415,87 @@ class WebSocketClient {
                 user_id: this.user_id,
                 problem_title: this.getProblemTitle(),
                 problem_description: this.getProblemDescription(),
+                question_meta: this.getQuestionMeta(),
+                question_hints: this.getQuestionHints(),
+                question_snippets: this.getQuestionSnippets(),
             };
             this.wss.send(JSON.stringify(message));
         }
     }
 
     getProblemTitle() {
-        const questionTitle = document.querySelector("h2#questionTitle")?.textContent.trim();
-        return questionTitle;
+        const el = document.querySelector("#questionTitle");
+        return el ? el.innerHTML : "";
     }
 
-    updateProblemTitle(updatedProblemTitle) {
-        const questionTitle = document.querySelector("h2#questionTitle");
-        if (questionTitle) {
-            questionTitle.textContent = updatedProblemTitle;
+    updateProblemTitle(content) {
+        const el = document.querySelector("#questionTitle");
+        if (el && el.innerHTML !== content) {
+            this.withObserverPaused(() => el.innerHTML = content);
         }
     }
 
     getProblemDescription() {
-        const problemDescription = document.querySelector("div#problemDescription")?.innerHTML.trim();
-        return problemDescription || `<div class="tracking-normal flex flex-col items-center h-screen text-center text-red-700 text-medium text-sm">
-        <div class="p-2 rounded-lg bg-red-50">Search for questions from
-            the search box.</div>
-    </div>`;
+        const el = document.querySelector("#problemDescription");
+        return el ? el.innerHTML : "";
     }
 
-    updateProblemDescription(updatedProblemDescriptionContent) {
-        const problemDescription = document.querySelector("div#problemDescription");
-        if (problemDescription) {
-            problemDescription.innerHTML = updatedProblemDescriptionContent;
+    updateProblemDescription(content) {
+        const el = document.querySelector("#problemDescription");
+        if (el && el.innerHTML !== content) {
+            this.withObserverPaused(() => el.innerHTML = content);
         }
     }
+
+    getQuestionMeta() {
+        const el = document.querySelector("#questionMeta");
+        return el ? el.innerHTML : "";
+    }
+
+    updateQuestionMeta(content) {
+        const el = document.querySelector("#questionMeta");
+        if (el && el.innerHTML !== content) {
+            this.withObserverPaused(() => el.innerHTML = content);
+        }
+    }
+
+    getQuestionHints() {
+        const el = document.querySelector("#questionHintsSection");
+        return el ? el.innerHTML : "";
+    }
+
+    updateQuestionHints(content) {
+        const el = document.querySelector("#questionHintsSection");
+        if (el && el.innerHTML !== content) {
+            this.withObserverPaused(() => el.innerHTML = content);
+        }
+    }
+
+    getQuestionSnippets() {
+        const el = document.querySelector("#codeSnippetCode");
+        return el ? el.innerHTML : "";
+    }
+
+    updateQuestionSnippets(content) {
+        const el = document.querySelector("#codeSnippetCode");
+        if (el && el.innerHTML !== content) {
+            this.withObserverPaused(() => el.innerHTML = content);
+        }
+    }
+
+    // Helper to pause observer during updates
+    withObserverPaused(callback) {
+        this.isRemoteUpdate = true;
+        try {
+            callback();
+        } finally {
+            setTimeout(() => {
+                this.isRemoteUpdate = false;
+            }, 0);
+        }
+    }
+
+
 
     updateJoinedUser(oppositeRole) {
         if (this.joinedUserElement) {
@@ -472,21 +602,61 @@ class WebSocketClient {
 
 function runWebsocketProcess() {
     const roomId = document.querySelector("span#roomId").textContent.trim();
-    let codeEditor = codeboxInit(); // Initialize with the default language
+    const languageSelector = document.querySelector('#programmingLanguages');
+    
+    // Client-side cache for code per language
+    const codeCache = new Map();
+    let lastLanguage = 'default';
+
+    // Initialize with the default language
+    let codeEditor = codeboxInit(); 
+
+    // Callback for remote language changes
+    const onRemoteLanguageChange = (newLanguage) => {
+        const normalizedLanguage = newLanguage.toLowerCase();
+        
+        // Save current code before switching
+        if (codeEditor) {
+            codeCache.set(lastLanguage, codeEditor.getValue());
+        }
+
+        if (languageSelector.value.toLowerCase() !== normalizedLanguage) {
+            // Find and select the matching option case-insensitively
+            for (let i = 0; i < languageSelector.options.length; i++) {
+                if (languageSelector.options[i].value.toLowerCase() === normalizedLanguage) {
+                    languageSelector.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            // Update tracking and init editor with cached code
+            lastLanguage = normalizedLanguage;
+            codeEditor = codeboxInit(normalizedLanguage, codeCache.get(normalizedLanguage));
+            wss.updateEditor(codeEditor);
+        }
+    };
 
     // Initialize WebSocket connection
-    let wss = new WebSocketClient(roomId, codeEditor);
+    let wss = new WebSocketClient(roomId, codeEditor, onRemoteLanguageChange);
 
     // Reload the code editor and WebSocket connection when the programming language changes
-    const languageSelector = document.querySelector('#programmingLanguages');
     languageSelector.addEventListener('change', (event) => {
         const selectedLanguage = event.target.value.toLowerCase();
 
-        // Only reinitialize the editor with the new language
-        codeEditor = codeboxInit(selectedLanguage);
+        // Save current code before switching
+        if (codeEditor) {
+            codeCache.set(lastLanguage, codeEditor.getValue());
+        }
+
+        // Notify peers about language change
+        wss.sendLanguageChange(selectedLanguage);
+
+        // Update tracking and reinitialize the editor with cached code or boilerplate
+        lastLanguage = selectedLanguage;
+        codeEditor = codeboxInit(selectedLanguage, codeCache.get(selectedLanguage));
 
         // Update the editor reference in the WebSocket client
-        wss.editor = codeEditor;
+        wss.updateEditor(codeEditor);
 
         // Send a sync message to update the code in the room
         if (wss.wss.readyState === WebSocket.OPEN) {
@@ -497,6 +667,9 @@ function runWebsocketProcess() {
                 user_id: wss.user_id,
                 problem_title: wss.getProblemTitle(),
                 problem_description: wss.getProblemDescription(),
+                question_meta: wss.getQuestionMeta(),
+                question_hints: wss.getQuestionHints(),
+                question_snippets: wss.getQuestionSnippets(),
             };
             wss.wss.send(JSON.stringify(message));
         }

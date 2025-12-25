@@ -26,6 +26,8 @@ const (
 	TypeSync  MessageType = "sync"
 	TypeLeave MessageType = "leave"
 	TypeError MessageType = "error"
+	// Language change message type
+	TypeLanguageChange MessageType = "language_change"
 	// WebRTC signaling message types
 	TypeOffer        MessageType = "offer"
 	TypeAnswer       MessageType = "answer"
@@ -39,8 +41,12 @@ type WebSocketMessage struct {
 	Content            interface{} `json:"content"`
 	ProblemTitle       string      `json:"problem_title"`
 	ProblemDescription string      `json:"problem_description"`
+	QuestionMeta       string      `json:"question_meta,omitempty"`
+	QuestionHints      string      `json:"question_hints,omitempty"`
+	QuestionSnippets   string      `json:"question_snippets,omitempty"`
 	UserID             string      `json:"user_id"`
 	Role               string      `json:"role"`
+	Language           string      `json:"language,omitempty"`
 	// WebRTC specific fields
 	TargetUserID string      `json:"target_user_id,omitempty"`
 	SDP          interface{} `json:"sdp,omitempty"`
@@ -56,7 +62,11 @@ type Room struct {
 	Unregister         chan *Client
 	ProblemTitle       string // Current problem title
 	ProblemDescription string // Current problem description
+	QuestionMeta       string // Current question meta HTML
+	QuestionHints      string // Current question hints HTML
+	QuestionSnippets   string // Current question snippets HTML
 	CodeState          string // Current code state
+	CurrentLanguage    string // Current programming language
 	CreatedAt          time.Time
 	mu                 sync.RWMutex
 }
@@ -113,7 +123,7 @@ func (r *Room) Run() {
 		select {
 		case client := <-r.Register:
 			r.mu.Lock()
-			if len(r.Clients) < 10 {
+			if len(r.Clients) < 3 {
 				r.Clients[client] = true
 				// Send current state to new client
 				syncMsg := &WebSocketMessage{
@@ -121,9 +131,13 @@ func (r *Room) Run() {
 					Content:            r.CodeState,
 					ProblemTitle:       r.ProblemTitle,
 					ProblemDescription: r.ProblemDescription,
+					QuestionMeta:       r.QuestionMeta,
+					QuestionHints:      r.QuestionHints,
+					QuestionSnippets:   r.QuestionSnippets,
 					RoomID:             r.ID,
 					UserID:             client.UserID,
 					Role:               client.Role,
+					Language:           r.CurrentLanguage,
 				}
 				client.SendChan <- syncMsg
 
@@ -165,6 +179,24 @@ func (r *Room) Run() {
 			r.mu.Lock()
 			if message.Type == TypeCode {
 				r.CodeState = message.Content.(string)
+				// Persist granular question state if present in the message
+				if message.ProblemTitle != "" {
+					r.ProblemTitle = message.ProblemTitle
+				}
+				if message.ProblemDescription != "" {
+					r.ProblemDescription = message.ProblemDescription
+				}
+				if message.QuestionMeta != "" {
+					r.QuestionMeta = message.QuestionMeta
+				}
+				if message.QuestionHints != "" {
+					r.QuestionHints = message.QuestionHints
+				}
+				if message.QuestionSnippets != "" {
+					r.QuestionSnippets = message.QuestionSnippets
+				}
+			} else if message.Type == TypeLanguageChange {
+				r.CurrentLanguage = message.Language
 			}
 
 			for client := range r.Clients {

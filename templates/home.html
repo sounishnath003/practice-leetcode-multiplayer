@@ -1,68 +1,68 @@
 {{ block "HomePage" .}}
 <link rel="stylesheet" href="/static/style.css">
 
-<!-- Menu bar section -->
-<div class="flex flex-row justify-between items-center p-1 bg-gray-100 dark:bg-gray-800 px-4 gap-4 dark:text-white">
-    <!-- Logo and Menu button -->
-    <div class="text-sm md:text-lg font-medium cursor-pointer"> {{.Title}} </div>
-    <!-- Display the roomId dynamically -->
-    <div id="roomIdDisplay" class="text-xs text-gray-700 dark:text-gray-300">
-        Room ID:
-        {{ if .Room.RoomID }}
-        <span id="roomId" class="text-green-700 font-medium dark:text-green-500">
-            {{ .Room.RoomID }}
+<div class="h-screen flex flex-col overflow-hidden dark:bg-gray-900 bg-gray-50">
+    <!-- Menu bar section -->
+    <div class="flex flex-row justify-between items-center p-2 bg-gray-100 dark:bg-gray-800 px-4 gap-4 dark:text-white border-b dark:border-gray-700 shrink-0">
+        <!-- Logo and Menu button -->
+        <div class="text-sm md:text-lg font-medium cursor-pointer"> {{.Title}} </div>
+        <!-- Display the roomId dynamically -->
+        <div id="roomIdDisplay" class="text-xs text-gray-700 dark:text-gray-300">
+            Room ID:
+            {{ if .Room.RoomID }}
+            <span id="roomId" class="text-green-700 font-medium dark:text-green-500">
+                {{ .Room.RoomID }}
+            </span>
+            {{ else }}
+            <span id="roomId" class="text-red-600">
+                None
+            </span>
+            {{ end }}
+
+        </div>
+        <div class="flex text-xs hidden md:block text-sm flex-row gap-1 text-green-700 p-1 rounded-lg dark:text-white">
+            <div>Online:</div>
+            <div id="joinedUser" class="text-green-700 font-medium dark:text-green-500">@muagerra</div>
+        </div>
+        <!-- Search Questions input box -->
+        <span class="htmx-indicator">
+            Searching...
         </span>
-        {{ else }}
-        <span id="roomId" class="text-red-600">
-            None
-        </span>
-        {{ end }}
+        <div class="w-[400px]">
+            <input type="search" id="questionTitleSlug" name="questionTitleSlug" hx-post="/api/search"
+                hx-trigger="input changed delay:500ms, keyup[key=='Enter'], load" hx-indicator=".htmx-indicator"
+                hx-target="#questionBlock" hx-swap="outerHTML"
+                class="form-control w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                placeholder="Type questions slug e.g two-sum, and hit enter" required />
+        </div>z
+        <!-- Choose language options -->
+
+        <select id="programmingLanguages"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+            <option value="select language">Choose Language</option>
+            {{ range .SupportedProgrammingLangs }}
+            <option value="{{ . }}"> {{.}} </option>
+            {{ end }}
+        </select>
+
+        <!-- run code button -->
+        <div><button
+                class="min-w-full text-white cursor-pointer bg-red-700 hover:bg-red-800 dark:bg-red-600 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-xs p-1 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
+                type="submit">Run code</button></div>
 
     </div>
-    <div class="flex text-xs hidden md:block text-sm flex-row gap-1 text-green-700 p-1 rounded-lg dark:text-white">
-        <div>Online:</div>
-        <div id="joinedUser" class="text-green-700 font-medium dark:text-green-500">@muagerra</div>
+
+    <!-- Main Section area -->
+    <div id="mainSectionMultiplayer"
+        class="flex flex-col md:flex-row flex-1 overflow-hidden items-start justify-start px-2 dark:text-white">
+        <div class="border-r dark:border-gray-700 h-full overflow-y-auto min-w-[550px] w-[550px] shrink-0 p-2 scrollbar-thin">
+            {{ template "QuestionBlock" }}
+        </div>
+        <div class="w-full h-full overflow-hidden">
+            {{template "CodeBox"}}
+        </div>
     </div>
-    <!-- Search Questions input box -->
-    <span class="htmx-indicator">
-        Searching...
-    </span>
-    <div class="w-[400px]">
-        <input type="search" id="questionTitleSlug" name="questionTitleSlug" hx-post="/api/search"
-            hx-trigger="input changed delay:500ms, keyup[key=='Enter'], load" hx-indicator=".htmx-indicator"
-            hx-target="#questionBlock"
-            class="form-control w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            placeholder="Type questions slug e.g two-sum, and hit enter" required />
-    </div>z
-    <!-- Choose language options -->
-
-    <select id="programmingLanguages"
-        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-        <option value="select language">Choose Language</option>
-        {{ range .SupportedProgrammingLangs }}
-        <option value="{{ . }}"> {{.}} </option>
-        {{ end }}
-    </select>
-
-    <!-- run code button -->
-    <div><button
-            class="min-w-full text-white cursor-pointer bg-red-700 hover:bg-red-800 dark:bg-red-600 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-xs p-1 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
-            type="submit">Run code</button></div>
-
-</div>
-
-<!-- Main Section area -->
-<div id="mainSectionMultiplayer"
-    class="flex flex-col md:flex-row items-center justify-start dark:bg-gray-900 bg-gray-50 min-h-screen px-2 dark:text-white">
-    <div class="border-r h-screen min-w-[550px]">
-        {{ template "QuestionBlock" }}
-    </div>
-    <div class="w-full">
-        {{template "CodeBox"}}
-    </div>
-</div>
-<!-- Main Section area -->
-
+    <!-- Main Section area -->
 </div>
 
 {{end}}
