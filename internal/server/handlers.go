@@ -25,6 +25,41 @@ var (
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	// Get the tmpl from request context
 	tmpl := r.Context().Value("template").(*template.Template)
+	
+	roomID := r.URL.Query().Get("room_id")
+	if roomID != "" {
+		// Attempt auto-join
+		roomManager.mu.RLock()
+		room, exists := roomManager.Rooms[roomID]
+		roomManager.mu.RUnlock()
+
+		if exists {
+			// Check capacity
+			room.mu.RLock()
+			count := len(room.Clients)
+			room.mu.RUnlock()
+
+			if count < 2 {
+				// Prepare data for HomePage
+				data := CollaborativeRoomPageData{
+					Title:                     "Practice Leetcode Multiplayer",
+					SupportedProgrammingLangs: []string{"Python", "Java", "Javascript"},
+					Message:                   "Welcome to the room!",
+					Room: RoomResponse{
+						RoomID:       roomID,
+						Message:      "Joined via link",
+						WebSocketURL: "/ws?room_id=" + roomID,
+					},
+				}
+				if err := tmpl.ExecuteTemplate(w, "Index", data); err != nil {
+					SendErrorResponse(w, http.StatusInternalServerError, err)
+				}
+				return
+			}
+		}
+		// If room invalid or full, just fall through to standard index (maybe could show error param?)
+	}
+
 	if r.URL.Path != "/" {
 		SendErrorResponse(w, http.StatusNotFound, ErrNotFound)
 		return

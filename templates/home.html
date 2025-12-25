@@ -13,6 +13,9 @@
             <span id="roomId" class="text-green-700 font-medium dark:text-green-500">
                 {{ .Room.RoomID }}
             </span>
+            <button onclick="copyJoinLink('{{ .Room.RoomID }}')" class="ml-2 text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 font-semibold py-1 px-2 rounded dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 transition-colors" id="copyLinkBtn">
+                Copy Link
+            </button>
             {{ else }}
             <span id="roomId" class="text-red-600">
                 None
@@ -64,5 +67,23 @@
     </div>
     <!-- Main Section area -->
 </div>
+
+<script>
+    function copyJoinLink(roomId) {
+        const link = window.location.origin + "/?room_id=" + roomId;
+        navigator.clipboard.writeText(link).then(() => {
+            const btn = document.getElementById('copyLinkBtn');
+            const originalText = btn.textContent;
+            btn.textContent = 'Copied!';
+            btn.classList.add('bg-green-100', 'text-green-800', 'dark:bg-green-900', 'dark:text-green-300');
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.classList.remove('bg-green-100', 'text-green-800', 'dark:bg-green-900', 'dark:text-green-300');
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+        });
+    }
+</script>
 
 {{end}}

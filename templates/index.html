@@ -22,9 +22,13 @@
 
 <body>
 
-    <div class="flex min-h-screen items-center justify-center dark:bg-gray-900">
-        {{ template "CreateRoom" }}
-    </div>
+    {{ if .Room.RoomID }}
+        {{ template "HomePage" . }}
+    {{ else }}
+        <div class="flex min-h-screen items-center justify-center dark:bg-gray-900">
+            {{ template "CreateRoom" }}
+        </div>
+    {{ end }}
 
 </body>
 

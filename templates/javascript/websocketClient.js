@@ -143,6 +143,9 @@ class WebSocketClient {
                 this.remoteCallReady = true;
                 this.showNotification(`${message.role} is ready to call!`, 'success');
                 this.checkAutoConnect();
+            } else if (message.type === 'call_ended') {
+                this.endCall(false); // End local call without notifying peer back
+                this.showNotification(`${message.role} ended the call`, 'info');
             } else if (message.type === 'code') {
                 // Update editor content without triggering change event
                 const currentCursor = this.editor.getCursor();
@@ -564,13 +567,22 @@ class WebSocketClient {
         }
     }
 
-    endCall() {
+    endCall(notifyPeer = true) {
+        if (notifyPeer && this.localCallReady && this.wss.readyState === WebSocket.OPEN) {
+            this.wss.send(JSON.stringify({
+                type: 'call_ended',
+                room_id: this.roomId,
+                user_id: this.user_id,
+                role: this.role
+            }));
+        }
+
         this.localCallReady = false;
         this.remoteCallReady = false;
         this.updateCallUI('idle');
         if (this.webrtcHandler) {
             this.webrtcHandler.disconnect();
-            this.showNotification('Call ended', 'info');
+            if (notifyPeer) this.showNotification('Call ended', 'info');
         }
     }
 
