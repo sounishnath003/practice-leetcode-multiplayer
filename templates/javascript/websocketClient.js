@@ -1,139 +1,3 @@
-"use strict";
-
-class WebRTCHandler {
-    constructor(roomId, userId, ws) {
-        this.roomId = roomId;
-        this.userId = userId;
-        this.ws = ws;
-        this.peerConnections = {};
-        this.localStream = null;
-        this.mediaConstraints = {
-            audio: true,
-            video: false
-        };
-    }
-
-    async initialize() {
-        try {
-            this.localStream = await navigator.mediaDevices.getUserMedia(this.mediaConstraints);
-            this.setupWebSocketHandlers();
-        } catch (error) {
-            console.error('Error accessing media devices:', error);
-        }
-    }
-
-    setupWebSocketHandlers() {
-        this.ws.onmessage = (event) => {
-            const message = JSON.parse(event.data);
-            switch (message.type) {
-                case 'offer':
-                    this.handleOffer(message);
-                    break;
-                case 'answer':
-                    this.handleAnswer(message);
-                    break;
-                case 'ice-candidate':
-                    this.handleIceCandidate(message);
-                    break;
-            }
-        };
-    }
-
-    async createPeerConnection(targetUserId) {
-        const configuration = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' }
-            ]
-        };
-
-        const peerConnection = new RTCPeerConnection(configuration);
-        this.peerConnections[targetUserId] = peerConnection;
-
-        // Add local stream
-        this.localStream.getTracks().forEach(track => {
-            peerConnection.addTrack(track, this.localStream);
-        });
-
-        // Handle ICE candidates
-        peerConnection.onicecandidate = (event) => {
-            if (event.candidate) {
-                this.ws.send(JSON.stringify({
-                    type: 'ice-candidate',
-                    room_id: this.roomId,
-                    target_user_id: targetUserId,
-                    ice_candidate: event.candidate,
-                    user_id: this.userId
-                }));
-            }
-        };
-
-        // Handle incoming audio
-        peerConnection.ontrack = (event) => {
-            const audioElement = document.createElement('audio');
-            audioElement.srcObject = event.streams[0];
-            audioElement.autoplay = true;
-            document.body.appendChild(audioElement);
-        };
-
-        return peerConnection;
-    }
-
-    async initiateCall(targetUserId) {
-        const peerConnection = await this.createPeerConnection(targetUserId);
-        const offer = await peerConnection.createOffer();
-        await peerConnection.setLocalDescription(offer);
-
-        this.ws.send(JSON.stringify({
-            type: 'offer',
-            room_id: this.roomId,
-            target_user_id: targetUserId,
-            sdp: offer,
-            user_id: this.userId
-        }));
-    }
-
-    async handleOffer(message) {
-        const peerConnection = await this.createPeerConnection(message.user_id);
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(message.sdp));
-
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-
-        this.ws.send(JSON.stringify({
-            type: 'answer',
-            room_id: this.roomId,
-            target_user_id: message.user_id,
-            sdp: answer,
-            user_id: this.userId
-        }));
-    }
-
-    async handleAnswer(message) {
-        const peerConnection = this.peerConnections[message.user_id];
-        if (peerConnection) {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(message.sdp));
-        }
-    }
-
-    async handleIceCandidate(message) {
-        const peerConnection = this.peerConnections[message.user_id];
-        if (peerConnection) {
-            await peerConnection.addIceCandidate(new RTCIceCandidate(message.ice_candidate));
-        }
-    }
-
-    disconnect() {
-        // Stop all tracks in local stream
-        if (this.localStream) {
-            this.localStream.getTracks().forEach(track => track.stop());
-        }
-
-        // Close all peer connections
-        Object.values(this.peerConnections).forEach(pc => pc.close());
-        this.peerConnections = {};
-    }
-}
-
 // Language-specific boilerplate code
 const languageBoilerplate = {
     python: "# Write your Python code here...\n\nif __name__ == '__main__':\n    print('Hello, Python!')",
@@ -220,6 +84,11 @@ class WebSocketClient {
         this.notificationContainer = this.createNotificationContainer();
         this.joinedUserElement = document.querySelector('#joinedUser');
         this.webrtcHandler = null;
+        
+        // Call readiness state
+        this.localCallReady = false;
+        this.remoteCallReady = false;
+        this.callTimerInterval = null;
 
         // Question block observer
         this.questionBlock = document.getElementById('questionBlock');
@@ -242,12 +111,9 @@ class WebSocketClient {
             const message = JSON.parse(e.data);
             console.log('Received message:', message);
 
-            // Always update user_id and role from the message
-            if (message.user_id) {
-                this.user_id = message.user_id;
-            }
-            if (message.role) {
-                this.role = message.role;
+            // Delegate WebRTC messages to handler
+            if (this.webrtcHandler && ['offer', 'answer', 'ice-candidate'].includes(message.type)) {
+                this.webrtcHandler.handleMessage(message);
             }
 
             if (message.type === 'join') {
@@ -273,18 +139,41 @@ class WebSocketClient {
                 if (this.onLanguageChange) {
                     this.onLanguageChange(message.language);
                 }
+            } else if (message.type === 'call_ready') {
+                this.remoteCallReady = true;
+                this.showNotification(`${message.role} is ready to call!`, 'success');
+                this.checkAutoConnect();
             } else if (message.type === 'code') {
                 // Update editor content without triggering change event
                 const currentCursor = this.editor.getCursor();
                 this.editor.setValue(message.content);
                 this.editor.setCursor(currentCursor);
             } else if (message.type === 'sync') {
+                // Set identity from sync message
+                this.user_id = message.user_id;
+                this.role = message.role;
+
                 // Sync initial state
+                this.initializeWebRTC(); // Ensure WebRTC is ready for late joiners
+                
                 if (message.language && this.onLanguageChange) {
                     this.onLanguageChange(message.language);
                 }
                 if (message.content) {
                     this.editor.setValue(message.content);
+                }
+                if (message.connected_users) {
+                    message.connected_users.forEach(u => {
+                        this.roomUsers.set(u.user_id, {
+                            role: u.role,
+                            userId: u.user_id
+                        });
+                        // Update UI for each (or just once at end)
+                        // Assuming max 2 users, so opposite role is singular
+                        if (u.role !== this.role) {
+                            this.updateJoinedUser(u.role);
+                        }
+                    });
                 }
                 if (message.problem_title) this.updateProblemTitle(message.problem_title);
                 if (message.problem_description) this.updateProblemDescription(message.problem_description);
@@ -512,21 +401,85 @@ class WebSocketClient {
 
     createAudioControls() {
         const controlsContainer = document.createElement('div');
-        controlsContainer.className = 'fixed bottom-4 right-4 z-50 flex gap-2';
+        controlsContainer.className = 'fixed bottom-4 right-4 z-50 flex flex-col gap-2 items-end';
 
-        const startCallButton = document.createElement('button');
-        startCallButton.className = 'px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600';
-        startCallButton.textContent = 'Start Call';
-        startCallButton.onclick = () => this.startCall();
+        const statusText = document.createElement('div');
+        statusText.id = 'callStatus';
+        statusText.className = 'text-xs text-gray-500 font-medium hidden dark:text-gray-400';
+        statusText.textContent = '';
 
-        const endCallButton = document.createElement('button');
-        endCallButton.className = 'px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600';
-        endCallButton.textContent = 'End Call';
-        endCallButton.onclick = () => this.endCall();
+        const callButton = document.createElement('button');
+        callButton.id = 'callButton';
+        callButton.className = 'px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 shadow-lg transition-colors';
+        callButton.textContent = 'Start Call';
+        callButton.onclick = () => this.handleCallButtonClick();
 
-        controlsContainer.appendChild(startCallButton);
-        controlsContainer.appendChild(endCallButton);
+        controlsContainer.appendChild(statusText);
+        controlsContainer.appendChild(callButton);
         document.body.appendChild(controlsContainer);
+    }
+
+    handleCallButtonClick() {
+        if (this.localCallReady && this.remoteCallReady) {
+            this.endCall(); // If connected, button ends call
+        } else if (this.localCallReady) {
+            this.endCall(); // If waiting, cancel
+        } else {
+            this.startCall(); // If idle, start
+        }
+    }
+
+    updateCallUI(state) {
+        const btn = document.getElementById('callButton');
+        const status = document.getElementById('callStatus');
+        if (!btn || !status) return;
+
+        switch (state) {
+            case 'idle':
+                this.stopCallTimer();
+                btn.textContent = 'Start Call';
+                btn.className = 'px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 shadow-lg transition-colors';
+                status.textContent = '';
+                status.classList.add('hidden');
+                break;
+            case 'waiting':
+                this.stopCallTimer();
+                btn.textContent = 'Cancel Call';
+                btn.className = 'px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 shadow-lg transition-colors';
+                status.textContent = 'Waiting for peer...';
+                status.classList.remove('hidden');
+                break;
+            case 'connected':
+                btn.textContent = 'End Call';
+                btn.className = 'px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 shadow-lg transition-colors animate-pulse';
+                status.className = 'text-xs text-red-500 font-bold dark:text-red-400';
+                status.classList.remove('hidden');
+                this.startCallTimer();
+                break;
+        }
+    }
+
+    startCallTimer() {
+        if (this.callTimerInterval) return;
+        const startTime = Date.now();
+        const status = document.getElementById('callStatus');
+        
+        const update = () => {
+            const diff = Math.floor((Date.now() - startTime) / 1000);
+            const mins = Math.floor(diff / 60).toString().padStart(2, '0');
+            const secs = (diff % 60).toString().padStart(2, '0');
+            if (status) status.textContent = `● In Call • ${mins}:${secs}`;
+        };
+        
+        update(); // Initial update
+        this.callTimerInterval = setInterval(update, 1000);
+    }
+
+    stopCallTimer() {
+        if (this.callTimerInterval) {
+            clearInterval(this.callTimerInterval);
+            this.callTimerInterval = null;
+        }
     }
 
     async initializeWebRTC() {
@@ -548,6 +501,34 @@ class WebSocketClient {
             return;
         }
 
+        this.localCallReady = true;
+        this.updateCallUI('waiting');
+        
+        // Notify peer we are ready
+        if (this.wss.readyState === WebSocket.OPEN) {
+            this.wss.send(JSON.stringify({
+                type: 'call_ready',
+                room_id: this.roomId,
+                user_id: this.user_id,
+                role: this.role
+            }));
+        }
+
+        if (!this.checkAutoConnect()) {
+            this.showNotification('Waiting for peer to join call...', 'info');
+        }
+    }
+
+    checkAutoConnect() {
+        if (this.localCallReady && this.remoteCallReady) {
+            this.updateCallUI('connected');
+            this.initiateWebRTCCall();
+            return true;
+        }
+        return false;
+    }
+
+    async initiateWebRTCCall() {
         if (!this.webrtcHandler) {
             await this.initializeWebRTC();
         }
@@ -565,18 +546,28 @@ class WebSocketClient {
 
         if (targetUserId) {
             try {
+                // Determine who initiates based on ID to avoid glare (though handled in webrtc.js too)
+                // Or just both try, and glare logic handles it. 
+                // Since both are 'ready', auto-connecting is fine.
                 await this.webrtcHandler.initiateCall(targetUserId);
-                this.showNotification('Call initiated', 'success');
+                this.showNotification('Connecting audio...', 'success');
             } catch (error) {
                 console.error('Failed to start call:', error);
                 this.showNotification('Failed to start call', 'error');
+                this.updateCallUI('idle'); // Reset on error
+                this.localCallReady = false;
             }
         } else {
-            this.showNotification('No user available to call', 'warning');
+            // Even if we can't find them in the map yet, they might be there.
+            // But getOppositeUserId relies on roomUsers map.
+            this.showNotification('Peer not found in room yet', 'warning');
         }
     }
 
     endCall() {
+        this.localCallReady = false;
+        this.remoteCallReady = false;
+        this.updateCallUI('idle');
         if (this.webrtcHandler) {
             this.webrtcHandler.disconnect();
             this.showNotification('Call ended', 'info');

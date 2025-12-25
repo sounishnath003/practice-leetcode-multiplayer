@@ -168,7 +168,7 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 	clientCount := len(room.Clients)
 	room.mu.RUnlock()
 
-	if clientCount >= 3 {
+	if clientCount >= 10 {
 		SendErrorResponse(w, http.StatusConflict, ErrRoomFullMsg)
 		return
 	}

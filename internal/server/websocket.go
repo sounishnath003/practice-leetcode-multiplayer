@@ -34,6 +34,11 @@ const (
 	TypeIceCandidate MessageType = "ice-candidate"
 )
 
+type UserInfo struct {
+	UserID string `json:"user_id"`
+	Role   string `json:"role"`
+}
+
 // WebSocketMessage represents the structure of messages
 type WebSocketMessage struct {
 	Type               MessageType `json:"type"`
@@ -46,6 +51,7 @@ type WebSocketMessage struct {
 	QuestionSnippets   string      `json:"question_snippets,omitempty"`
 	UserID             string      `json:"user_id"`
 	Role               string      `json:"role"`
+	ConnectedUsers     []UserInfo  `json:"connected_users,omitempty"`
 	Language           string      `json:"language,omitempty"`
 	// WebRTC specific fields
 	TargetUserID string      `json:"target_user_id,omitempty"`
@@ -123,8 +129,20 @@ func (r *Room) Run() {
 		select {
 		case client := <-r.Register:
 			r.mu.Lock()
-			if len(r.Clients) < 3 {
+			if len(r.Clients) < 2 {
 				r.Clients[client] = true
+
+				// Get list of existing users
+				var connectedUsers []UserInfo
+				for c := range r.Clients {
+					if c.UserID != client.UserID {
+						connectedUsers = append(connectedUsers, UserInfo{
+							UserID: c.UserID,
+							Role:   c.Role,
+						})
+					}
+				}
+
 				// Send current state to new client
 				syncMsg := &WebSocketMessage{
 					Type:               TypeSync,
@@ -137,6 +155,7 @@ func (r *Room) Run() {
 					RoomID:             r.ID,
 					UserID:             client.UserID,
 					Role:               client.Role,
+					ConnectedUsers:     connectedUsers,
 					Language:           r.CurrentLanguage,
 				}
 				client.SendChan <- syncMsg
