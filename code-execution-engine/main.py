@@ -158,25 +158,72 @@ def execute_code(language: str, codeb64encoded: str, stdin: str) -> Optional[Cod
 
 app = flask.Flask(__name__)
 
+# Helper function for allowed origins and referers
+def is_allowed_request():
+    # This function checks origin/referer/host headers for our allowed domains
+    allowed_domains = [
+        "http://localhost:3000",
+        "https://practice-leetcode-multiplayer-797087556919.asia-south1.run.app",
+        # support with/without trailing slash
+        "practice-leetcode-multiplayer-797087556919.asia-south1.run.app",
+    ]
+    origin = flask.request.headers.get("Origin", "").rstrip("/")
+    referer = flask.request.headers.get("Referer", "").rstrip("/")
+    host = flask.request.host
+    # Also allow from code itself
+    if origin in allowed_domains:
+        return True
+    if referer:
+        # e.g. Referer might include paths (/), so check startswith
+        for dom in allowed_domains:
+            if referer.startswith(dom):
+                return True
+    # For backend-to-backend through internal Cloud Run
+    # "Host" could be "practice-leetcode-multiplayer-797087556919.asia-south1.run.app" without protocol
+    for dom in allowed_domains:
+        if dom.startswith("http"):
+            dom2 = dom.split("://", 1)[-1]
+        else:
+            dom2 = dom
+        if host.lower() == dom2.lower():
+            return True
+    return False
+
 @app.route("/health", methods=["GET"])
 def health_check():
     return "OK", 200
 
 @app.route("/", methods=["POST", "OPTIONS"])
 def execute_code_handler():
-    """HTTP Handler to execute code."""
+    """HTTP Handler to execute code, only for allowed domains."""
+    allowed_origins = [
+        "http://localhost:3000",
+        "https://practice-leetcode-multiplayer-797087556919.asia-south1.run.app"
+    ]
+
     # Set CORS headers for the preflight request
     if flask.request.method == "OPTIONS":
-        headers = {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST",
-            "Access-Control-Allow-Headers": "Content-Type",
-            "Access-Control-Max-Age": "3600",
-        }
-        return ("", 204, headers)
+        req_origin = flask.request.headers.get("Origin", "")
+        if req_origin in allowed_origins:
+            cors_headers = {
+                "Access-Control-Allow-Origin": req_origin,
+                "Access-Control-Allow-Methods": "POST",
+                "Access-Control-Allow-Headers": "Content-Type",
+                "Access-Control-Max-Age": "3600"
+            }
+        else:
+            # Not an allowed origin
+            return ("", 403, {"Access-Control-Allow-Origin": "null"})
+        return ("", 204, cors_headers)
 
-    # Set CORS headers for the main request
-    headers = {"Access-Control-Allow-Origin": "*"}
+    # For the POST (execution), check if sender is allowed
+    if not is_allowed_request():
+        # Disallowed; also echo with null origin for CORS
+        return ({"error": "Forbidden: requests only allowed from specific domains."}, 403, {"Access-Control-Allow-Origin": "null"})
+
+    # Now: set Access-Control-Allow-Origin header for allowed origins, if present
+    req_origin = flask.request.headers.get("Origin", "")
+    headers = {"Access-Control-Allow-Origin": req_origin if req_origin in allowed_origins else allowed_origins[0]}
 
     try:
         request_json = flask.request.get_json(silent=True)

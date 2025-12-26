@@ -12,7 +12,7 @@ func main() {
 
 	co := core.Core{
 		Port:             utils.GetNumberFromEnv("PORT", 3000),
-		CodeRunnerEngine: utils.GetStringFromEnv("CODE_RUNNER_ENGINE_API", "http://localhost.coderunner.sh:3001"),
+		CodeRunnerEngine: utils.GetStringFromEnv("CODE_RUNNER_ENGINE_API", "http://localhost:8080"),
 		Lo:               log.Default(),
 	}
 

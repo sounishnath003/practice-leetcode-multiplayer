@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sounishnath003/practice-leetcode-multiplayer/internal/core"
 	"github.com/sounishnath003/practice-leetcode-multiplayer/internal/leetcode"
+	"google.golang.org/api/idtoken"
 
 	"bytes"
 	"encoding/base64"
@@ -73,11 +74,37 @@ func ExecuteCodeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	proxyReq.Header.Set("Content-Type", "application/json")
 
+	// Add Authorization header if not running locally
+	if !strings.Contains(engineURL, "localhost") && !strings.Contains(engineURL, "127.0.0.1") {
+		// Create an ID token source for the target audience (the engine URL)
+		tokenSource, err := idtoken.NewTokenSource(ctx, engineURL)
+		if err != nil {
+			log.Printf("Failed to create token source: %v", err)
+			SendErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("authentication configuration error"))
+			return
+		}
+
+		token, err := tokenSource.Token()
+		if err != nil {
+			log.Printf("Failed to fetch ID token: %v", err)
+			SendErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("failed to authenticate with execution engine"))
+			return
+		}
+
+		proxyReq.Header.Set("Authorization", "Bearer "+token.AccessToken)
+
+	}
+
 	client := &http.Client{}
+
 	resp, err := client.Do(proxyReq)
+
 	if err != nil {
+
 		if ctx.Err() == context.DeadlineExceeded {
+
 			SendErrorResponse(w, http.StatusGatewayTimeout, fmt.Errorf("execution timed out"))
+
 		} else {
 			SendErrorResponse(w, http.StatusBadGateway, fmt.Errorf("failed to call execution engine: %v", err))
 		}

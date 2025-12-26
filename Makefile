@@ -22,9 +22,9 @@ docker-build:
 .PHONY: deploy-application
 deploy-application: docker-build
 	docker push $(DockerImageName):$$(date +'%Y.%m.%d')
-	gcloud run deploy practice-leetcode-multiplayer --image $(DockerImageName):$$(date +'%Y.%m.%d') --region asia-south1 --allow-unauthenticated --platform managed
+	gcloud run deploy practice-leetcode-multiplayer --image $(DockerImageName):$$(date +'%Y.%m.%d') --region asia-south1 --allow-unauthenticated --platform managed --set-env-vars=CODE_RUNNER_ENGINE_API=https://code-execution-engine-797087556919.asia-south1.run.app --cpu=1 --memory=256Mi --min=0 --max-instances=3
 
 
 .PHONY: deploy-code-runner-engine
 deploy-code-runner-engine:
-	gcloud run deploy code-execution-engine --source ./code-execution-engine --region asia-south1 --allow-unauthenticated --platform managed
+	gcloud run deploy code-execution-engine --source ./code-execution-engine --region asia-south1 --no-allow-unauthenticated --platform managed --concurrency=100 --port 8080 --cpu=1 --memory=128Mi --min=0 --max-instances=2
