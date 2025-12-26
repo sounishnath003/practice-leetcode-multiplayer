@@ -14,4 +14,4 @@ run: build
 
 docker-build:
 	docker rmi -f $$(docker images -qa $(DockerImageName))
-	docker build -t $(DockerImageName):$(date +'%Y.%m.%d') -f Dockerfile .
+	docker build -t $(DockerImageName):$$(date +'%Y.%m.%d') -f Dockerfile .
