@@ -13,7 +13,18 @@ type GraphQLResponse struct {
 }
 
 type QuestionNode struct {
-	Question Question `json:"question"`
+	Question               Question                `json:"question"`
+	ProblemsetQuestionList *ProblemsetQuestionList `json:"problemsetQuestionList,omitempty"`
+}
+
+type ProblemsetQuestionList struct {
+	Questions []SearchQuestion `json:"questions"`
+}
+
+type SearchQuestion struct {
+	Title      string `json:"title"`
+	TitleSlug  string `json:"titleSlug"`
+	Difficulty string `json:"difficulty"`
 }
 
 type Question struct {

@@ -650,6 +650,27 @@ function runWebsocketProcess() {
     // Initialize WebSocket connection
     let wss = new WebSocketClient(roomId, codeEditor, onRemoteLanguageChange);
 
+    // Listen for HTMX swaps to re-initialize editor with new question boilerplate
+    document.body.addEventListener('htmx:afterSwap', (event) => {
+        // Only trigger if the question block was swapped
+        if (event.target.id === 'questionBlock' || event.detail.target.id === 'questionBlock') {
+            console.log("Question swapped, refreshing editor boilerplate...");
+            
+            // Clear cache as we have a new question
+            codeCache.clear();
+            
+            // Re-initialize editor with current language to pull new boilerplate from DOM
+            const currentLang = languageSelector.value.toLowerCase();
+            codeEditor = codeboxInit(currentLang);
+            
+            // Update tracking
+            lastLanguage = currentLang;
+            
+            // Update WebSocket client reference
+            wss.updateEditor(codeEditor);
+        }
+    });
+
     // Reload the code editor and WebSocket connection when the programming language changes
     languageSelector.addEventListener('change', (event) => {
         const selectedLanguage = event.target.value.toLowerCase();

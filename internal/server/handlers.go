@@ -218,6 +218,63 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 	SendJSONResponse(w, http.StatusOK, "hurray. api is working fine.")
 }
 
+type SearchSuggestionData struct {
+	Suggestions []leetcode.SearchQuestion
+}
+
+func SearchSuggestionsHandler(w http.ResponseWriter, r *http.Request) {
+	// tmpl := r.Context().Value("template").(*template.Template)
+	keyword := r.FormValue("questionTitleSlug")
+
+	if len(keyword) < 2 {
+		// Don't show suggestions for very short keywords
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	questions, err := leetcode.SearchQuestionsListFromLeetcode(ctx, keyword)
+	if err != nil {
+		log.Printf("Error fetching suggestions: %v", err)
+		return
+	}
+
+	data := SearchSuggestionData{
+		Suggestions: questions,
+	}
+
+	// We'll create a small template for suggestions
+	const suggestionsTmpl = `
+	<div id="searchSuggestions" class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg shadow-xl overflow-hidden">
+		{{ range .Suggestions }}
+		<div class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b last:border-b-0 dark:border-gray-700"
+			 hx-post="/api/search?questionTitleSlug={{ .TitleSlug }}"
+			 hx-target="#questionBlock"
+			 hx-swap="outerHTML"
+			 hx-on::after-request="document.getElementById('searchSuggestions').remove(); document.getElementById('questionTitleSlug').value = '{{ .TitleSlug }}'">
+			<div class="flex justify-between items-center">
+				<span class="text-sm font-medium dark:text-white">{{ .Title }}</span>
+				<span class="text-xs px-2 py-0.5 rounded {{ if eq .Difficulty "Easy" }}bg-green-100 text-green-700{{ else if eq .Difficulty "Medium" }}bg-amber-100 text-amber-700{{ else }}bg-red-100 text-red-700{{ end }}">
+					{{ .Difficulty }}
+				</span>
+			</div>
+		</div>
+		{{ end }}
+	</div>
+	`
+
+	t, err := template.New("suggestions").Parse(suggestionsTmpl)
+	if err != nil {
+		log.Printf("Error parsing suggestions template: %v", err)
+		return
+	}
+
+	if err := t.Execute(w, data); err != nil {
+		log.Printf("Error executing suggestions template: %v", err)
+	}
+}
+
 // SearchQuestionHandler
 func SearchQuestionHandler(w http.ResponseWriter, r *http.Request) {
 	// Get the template from  context

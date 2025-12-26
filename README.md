@@ -2,7 +2,7 @@
 
 > NOTE: Project is just a thought. Do not expect to be maintain nicely. Not sure, about future plans.
 
-This project is a multiplayer platform for practicing Leetcode problems. It allows users to collaborate and compete in solving coding challenges in real-time.
+This project is a multiplayer platform for practicing Leetcode problems. It allows users to collaborate and compete in solving coding challenges in real-time with integrated audio calling and cloud code execution.
 
 ## YouTube Demo
 
@@ -13,11 +13,21 @@ This project is a multiplayer platform for practicing Leetcode problems. It allo
 
 [practice-leetcode-multiplayer-797087556919.asia-south1.run.app](https://practice-leetcode-multiplayer-797087556919.asia-south1.run.app)
 
-## Features
+## Latest Features
 
-- **Rooms**: Create or join rooms to collaborate with others.
-- **Chat**: Communicate with teammates using an integrated chat system.
-- **Code Editor**: Solve problems with a simple and intuitive code editor.
+- **Collaborative Code Editor**: Real-time synchronized editor with syntax highlighting for Python, Java, JavaScript, and C++.
+- **Remote Code Execution**: Execute code directly in the cloud using a dedicated **Serverless Execution Engine** (hosted on Google Cloud Run) with support for Python, Java, JavaScript, and C++.
+- **Smart Search with Suggestions**: Find any LeetCode problem by name with a real-time suggestions dropdown showing the top 5 matches.
+- **Integrated Audio Calls**: Seamless pair programming experience with built-in **WebRTC audio calling**.
+- **Automatic Boilerplate**: Selecting a problem or changing languages automatically fetches the correct function stubs and starter code from LeetCode.
+- **Full State Sync**: All participants stay in sync with the same code, programming language, and problem details via WebSockets.
+
+## Architecture
+
+- **Backend**: Go (Golang) with standard library `net/http` and `gorilla/websocket`.
+- **Frontend**: HTML + Tailwind CSS + HTMX for dynamic interactions.
+- **Code Execution**: Python-based Flask app running in a Docker container on Google Cloud Run, strictly isolated with execution timeouts.
+- **Real-time**: WebSockets for state synchronization and WebRTC for peer-to-peer audio communication.
 
 ## UI Screens:
 
@@ -25,11 +35,7 @@ This project is a multiplayer platform for practicing Leetcode problems. It allo
 
 ![signin](assets/signin.png)
 
-### Collaborative Join (If Room doesn't exist):
-
-![wrongroom](assets/wrongroom.png)
-
-### Multiplayer Screen:
+### Multiplayer Screen (with Audio & Code Execution):
 
 ![multiplayer](assets/multiplayer.png)
 
@@ -43,31 +49,22 @@ This project is a multiplayer platform for practicing Leetcode problems. It allo
     ```bash
     make install
     ```
-3. Start the application:
+3. Set up the Code Execution Engine URL (optional, defaults to production):
+    ```bash
+    export CODE_EXECUTION_ENGINE_URL="https://your-engine-url.run.app"
+    ```
+4. Start the application:
     ```bash
     make run
     ```
-4. Build docker image:
-    ```bash
-    # Build stage
-    FROM golang:1.24-alpine AS builder
 
-    WORKDIR /app
+## Environment Variables
 
-    COPY . .
-    RUN go mod tidy && go mod download && go mod verify
-    RUN CGO_ENABLED=0 go build -o /app/bin/practice_leetcode_multiplayer main.go
-
-    # Final stage
-    FROM scratch
-    WORKDIR /app
-
-    COPY --from=builder /app/bin/practice_leetcode_multiplayer /app/bin/practice_leetcode_multiplayer
-    COPY --from=builder /app/templates/ ./templates/
-
-    EXPOSE 3000
-    ENTRYPOINT [ "/app/bin/practice_leetcode_multiplayer" ]
-    ```
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Port for the Go server | `3000` |
+| `CODE_EXECUTION_ENGINE_URL` | URL of the deployed Cloud Run engine | `https://your-engine-url.run.app` |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Path to GCP service account JSON (for authenticated calls) | N/A |
 
 
 ## Contributing

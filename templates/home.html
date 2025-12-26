@@ -27,16 +27,20 @@
             <div>Online:</div>
             <div id="joinedUser" class="text-green-700 font-medium dark:text-green-500">@muagerra</div>
         </div>
-        <!-- Search Questions input box -->
         <span class="htmx-indicator">
             Searching...
         </span>
-        <div class="w-[400px]">
-            <input type="search" id="questionTitleSlug" name="questionTitleSlug" hx-post="/api/search"
-                hx-trigger="input changed delay:500ms, keyup[key=='Enter'], load" hx-indicator=".htmx-indicator"
-                hx-target="#questionBlock" hx-swap="outerHTML"
+        <div class="w-[400px] relative">
+            <input type="search" id="questionTitleSlug" name="questionTitleSlug" 
+                hx-post="/api/suggestions"
+                hx-trigger="input changed delay:300ms" 
+                hx-target="#suggestionsContainer"
+                hx-indicator=".htmx-indicator"
                 class="form-control w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                placeholder="Type questions slug e.g two-sum, and hit enter" required />
+                placeholder="Type questions slug e.g two-sum, and hit enter" 
+                onkeydown="if(event.key==='Enter') { htmx.ajax('POST', '/api/search', {values: {questionTitleSlug: this.value}, target: '#questionBlock', swap: 'outerHTML'}); document.getElementById('suggestionsContainer').innerHTML = ''; }"
+                autocomplete="off" required />
+            <div id="suggestionsContainer"></div>
         </div>
         
         <!-- Choose language options -->
