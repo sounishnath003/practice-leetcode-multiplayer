@@ -97,13 +97,23 @@ func ExecuteCodeHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		proxyReq.Header.Set("Authorization", "Bearer "+token.AccessToken)
+				proxyReq.Header.Set("Authorization", "Bearer "+token.AccessToken)
 
-	}
+			}
 
-	client := &http.Client{}
+		
 
-	resp, err := client.Do(proxyReq)
+		    // Set Origin header to satisfy the engine's domain check
+
+		    proxyReq.Header.Set("Origin", "https://practice-leetcode-multiplayer-797087556919.asia-south1.run.app")
+
+		
+
+			client := &http.Client{}
+
+			resp, err := client.Do(proxyReq)
+
+		
 
 	if err != nil {
 
