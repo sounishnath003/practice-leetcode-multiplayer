@@ -219,6 +219,11 @@ func (r *Room) Run() {
 			}
 
 			for client := range r.Clients {
+				// Don't send code updates or language changes back to the sender
+				if client.UserID == message.UserID && (message.Type == TypeCode || message.Type == TypeLanguageChange) {
+					continue
+				}
+
 				select {
 				case client.SendChan <- message:
 				default:
