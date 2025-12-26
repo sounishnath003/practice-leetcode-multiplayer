@@ -58,7 +58,7 @@
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <!-- CodeMirror JS -->
 
-<div class="flex flex-col h-screen">
+<div class="flex flex-col h-full">
     <!-- Code Editor Section -->
     <div class="flex-grow">
         <textarea name="codebox" id="codebox" wrap="hard"
@@ -66,17 +66,17 @@
     </div>
 
     <!-- Testcases and Output Section -->
-    <div class="flex flex-col md:flex-row gap-4 p-2 dark:bg-gray-800 bg-gray-100">
-        <textarea class="border dark:border-white rounded-lg flex-1 p-2 dark:text-white bg-white dark:bg-gray-800"
-            placeholder="Enter your testcases" rows="5"></textarea>
-        <textarea class="border dark:border-white rounded-lg flex-1 p-2 dark:text-white bg-white dark:bg-gray-800"
-            placeholder="Output will be shown here" rows="5"></textarea>
+    <div class="flex flex-col md:flex-row gap-4 p-2 dark:bg-gray-800 bg-gray-100 h-1/3 shrink-0">
+        <textarea id="testcases" class="border dark:border-white rounded-lg flex-1 p-2 dark:text-white bg-white dark:bg-gray-800 resize-none font-mono text-xs"
+            placeholder="Enter your testcases (stdin)" rows="5"></textarea>
+        <textarea id="output" class="border dark:border-white rounded-lg flex-1 p-2 dark:text-white bg-white dark:bg-gray-800 resize-none font-mono text-xs"
+            placeholder="Output will be shown here..." rows="5" readonly></textarea>
     </div>
 </div>
 
 <style>
     .CodeMirror {
-        height: 100vh;
+        height: 100%;
         font-family: 'Fira Code, monospace';
         font-size: 14px;
     }

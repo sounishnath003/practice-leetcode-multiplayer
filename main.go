@@ -11,8 +11,9 @@ import (
 func main() {
 
 	co := core.Core{
-		Port: utils.GetNumberFromEnv("PORT", 3000),
-		Lo:   log.Default(),
+		Port:             utils.GetNumberFromEnv("PORT", 3000),
+		CodeRunnerEngine: utils.GetStringFromEnv("CODE_RUNNER_ENGINE_API", "http://localhost.coderunner.sh:3001"),
+		Lo:               log.Default(),
 	}
 
 	// Init the server

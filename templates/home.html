@@ -37,9 +37,9 @@
                 hx-target="#questionBlock" hx-swap="outerHTML"
                 class="form-control w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                 placeholder="Type questions slug e.g two-sum, and hit enter" required />
-        </div>z
+        </div>
+        
         <!-- Choose language options -->
-
         <select id="programmingLanguages"
             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
             <option value="select language">Choose Language</option>
@@ -49,10 +49,9 @@
         </select>
 
         <!-- run code button -->
-        <div><button
+        <div><button id="run-code-btn"
                 class="min-w-full text-white cursor-pointer bg-red-700 hover:bg-red-800 dark:bg-red-600 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-xs p-1 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
                 type="submit">Run code</button></div>
-
     </div>
 
     <!-- Main Section area -->
@@ -85,5 +84,6 @@
         });
     }
 </script>
+<script src="/static/javascript/codebox.js"></script>
 
 {{end}}

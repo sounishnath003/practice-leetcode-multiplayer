@@ -21,6 +21,7 @@ func (s *Server) StartServer() error {
 	srv.HandleFunc("GET /", IndexHandler)
 	srv.HandleFunc("GET /api/healthz", MiddlewareChain(HealthHandler, LoggerMiddleware()))
 	srv.HandleFunc("POST /api/search", MiddlewareChain(SearchQuestionHandler, LoggerMiddleware()))
+	srv.HandleFunc("POST /api/execute-code", MiddlewareChain(ExecuteCodeHandler, LoggerMiddleware()))
 
 	// Add a websocket server route
 	// Runs a websocket connection endpoint.
@@ -34,7 +35,7 @@ func (s *Server) StartServer() error {
 	srv.Handle("GET /static/", http.StripPrefix("/static/", staticFileServer))
 
 	s.Co.Lo.Printf("trying to start the server on http://0.0.0.0:%d\n", s.Co.Port)
-	return http.ListenAndServe(fmt.Sprintf(":%d", s.Co.Port), DefaultMiddlwareTracker(srv))
+	return http.ListenAndServe(fmt.Sprintf(":%d", s.Co.Port), DefaultMiddlwareTracker(srv, s.Co))
 }
 
 // ParseTemplates parses all template files in the specified directory and returns a compiled template.

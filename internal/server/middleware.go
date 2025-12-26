@@ -5,10 +5,12 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/sounishnath003/practice-leetcode-multiplayer/internal/core"
 )
 
 // DefaultMiddlwareTracker is a global middleware that logs every request.
-func DefaultMiddlwareTracker(next http.Handler) http.Handler {
+func DefaultMiddlwareTracker(next http.Handler, co *core.Core) http.Handler {
 
 	// Parse the templates and store
 	// Add template into the Request Context to be used by All routes
@@ -21,7 +23,10 @@ func DefaultMiddlwareTracker(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		log.Printf("[DefaultMiddlwareTracker]: Started method=%s, path=%s, remoteAddr=%s", r.Method, r.URL.Path, r.RemoteAddr)
+		// Added template in request context
 		ctx := context.WithValue(r.Context(), "template", tmpl)
+		// Added Core in request context
+		ctx = context.WithValue(ctx, "core", co)
 		newCtx := r.WithContext(ctx)
 
 		next.ServeHTTP(w, newCtx)

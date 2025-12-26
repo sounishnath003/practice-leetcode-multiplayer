@@ -23,7 +23,7 @@ type Question struct {
 	TitleSlug          string                 `json:"titleSlug"`
 	Content            string                 `json:"content"`
 	CodeSnippets       []CodeSnippet          `json:"codeSnippets"`
-	CodeSnippetsMap     map[string]CodeSnippet `json:"codeSnippetsMap"`
+	CodeSnippetsMap    map[string]CodeSnippet `json:"codeSnippetsMap"`
 	Difficulty         string                 `json:"difficulty"`
 	Likes              int64                  `json:"likes"`
 	Hints              []string               `json:"hints"`

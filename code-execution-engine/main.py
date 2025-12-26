@@ -1,79 +1,21 @@
 """
 ===================================================
 Simple Efficient Code Runner Engine
-Deployed on "Google Cloud Functions"
+Deployed on "Google Cloud Run"
 ===================================================
 Supports Language: CPP, Java, NodeJS, Python, Go
 ===================================================
 """
-"""Code a Efficient Code Runner Engine"""
 
 import os
 import base64
 import resource
 import tempfile
 import subprocess
-import signal
 from dataclasses import dataclass
 from typing import Optional
-from contextlib import contextmanager
 
 import flask
-import flask.typing
-import functions_framework
-
-# Constants :
-SAMPLE_PY_CODE = """# Hello world program in python3.
-def main():
-    inputs=input("enter your code:")
-    for i in range(4):
-        print(f"User input {i=} val=HelloWorld {inputs=}")
-
-main()
-"""
-
-SAMPLE_CPP_CODE="""
-#include<iostream>
-using namespace std;
-int main() {
-    cout << "Hello world! :-)" << endl;
-    return 0;
-}
-"""
-
-SAMPLE_GO_CODE="""
-package main
-
-import (
-"fmt"
-)
-
-func main() {
-    fmt.Println("Hello world!, from Golang")
-}
-"""
-
-SAMPLE_NODE_CODE="""
-console.log("i am executing javascript code....");
-"""
-
-class TimeoutException(Exception):
-    pass
-
-@contextmanager
-def timeout(seconds):
-    def signal_handler(signum, frame):
-        raise TimeoutException("Timed out")
-    
-    # Set the signal handler and alarm
-    signal.signal(signal.SIGALRM, signal_handler)
-    signal.alarm(seconds)
-    
-    try:
-        yield
-    finally:
-        # Disable the alarm
-        signal.alarm(0)
 
 def limit_resource_memory(memory_limit_bytes: int):
     """Sets memory limit for child process"""
@@ -177,13 +119,14 @@ def execute_code(language: str, codeb64encoded: str, stdin: str) -> Optional[Cod
         else:
             execute_cmd = execute_cmd + [code_file_name]
 
-        with timeout(5):
-            process = subprocess.run(
-                execute_cmd,
-                input=stdin.encode("utf-8"),
-                capture_output=True,
-                cwd=temp_dir
-            )
+        # Use subprocess built-in timeout
+        process = subprocess.run(
+            execute_cmd,
+            input=stdin.encode("utf-8"),
+            capture_output=True,
+            cwd=temp_dir,
+            timeout=3
+        )
 
         return CodeOutput(
             stdout=process.stdout.decode("utf-8"),
@@ -192,10 +135,10 @@ def execute_code(language: str, codeb64encoded: str, stdin: str) -> Optional[Cod
             error=bool(process.stderr)
         )
 
-    except TimeoutException:
+    except subprocess.TimeoutExpired:
         return CodeOutput(
             stdout="",
-            stderr="[TimeLimitExceeded]: Code execution timed out after 5 seconds",
+            stderr="[TimeLimitExceeded]: Code execution timed out after 3 seconds",
             message="Time limit exceeded",
             error=True
         )
@@ -213,20 +156,67 @@ def execute_code(language: str, codeb64encoded: str, stdin: str) -> Optional[Cod
                 os.remove(os.path.join(temp_dir, file))
             os.rmdir(temp_dir)
 
-def main():
-    output = execute_code("python", encode_to_base64(SAMPLE_PY_CODE), "1 2 3")
-    print(output)
-    output = execute_code("cpp", encode_to_base64(SAMPLE_CPP_CODE), "")
-    print(output)
-    output = execute_code("nodejs", encode_to_base64(SAMPLE_NODE_CODE), "")
-    print(output)
-    output = execute_code("go", encode_to_base64(SAMPLE_GO_CODE), "")
-    print(output)
+app = flask.Flask(__name__)
 
-@functions_framework.http
-def main_function_handler(request:flask.Request) -> flask.typing.ResponseReturnValue:
-    return "Hello World, from sounish-code-execution-engine"
+@app.route("/health", methods=["GET"])
+def health_check():
+    return "OK", 200
+
+@app.route("/", methods=["POST", "OPTIONS"])
+def execute_code_handler():
+    """HTTP Handler to execute code."""
+    # Set CORS headers for the preflight request
+    if flask.request.method == "OPTIONS":
+        headers = {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Max-Age": "3600",
+        }
+        return ("", 204, headers)
+
+    # Set CORS headers for the main request
+    headers = {"Access-Control-Allow-Origin": "*"}
+
+    try:
+        request_json = flask.request.get_json(silent=True)
+        if not request_json:
+            return ({"error": "Invalid JSON"}, 400, headers)
+
+        # Normalize language to lowercase
+        language = request_json.get("language", "").lower()
+        code_b64 = request_json.get("code")
+        stdin = request_json.get("stdin", "")
+
+        if not language or not code_b64:
+            return ({"error": "Missing 'language' or 'code' field"}, 400, headers)
+
+        # Map frontend language names to engine language names if necessary
+        lang_map = {
+            "javascript": "nodejs",
+            "python": "python",
+            "java": "java",
+            "go": "go",
+            "cpp": "cpp"
+        }
+        
+        engine_lang = lang_map.get(language, language)
+
+        result = execute_code(engine_lang, code_b64, stdin)
+        
+        if result is None:
+             return ({"error": "Execution failed internally"}, 500, headers)
+
+        return (flask.jsonify({
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "message": result.message,
+            "error": result.error
+        }), 200, headers)
+
+    except Exception as e:
+        return ({"error": str(e)}, 500, headers)
 
 if __name__ == "__main__":
-    main()
-    main_function_handler(None)
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)

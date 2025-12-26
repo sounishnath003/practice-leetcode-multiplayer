@@ -6,11 +6,18 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/sounishnath003/practice-leetcode-multiplayer/internal/core"
 	"github.com/sounishnath003/practice-leetcode-multiplayer/internal/leetcode"
+
+	"bytes"
+	"encoding/base64"
+	"encoding/json"
+	"io"
 )
 
 var (
@@ -24,10 +31,75 @@ var (
 	ErrJoinFailed       = fmt.Errorf("failed to join room. please try again")
 )
 
+func ExecuteCodeHandler(w http.ResponseWriter, r *http.Request) {
+	var req ExecuteCodeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		SendErrorResponse(w, http.StatusBadRequest, fmt.Errorf("invalid request body"))
+		return
+	}
+
+	// Grab the templ from the context
+	co := r.Context().Value("core").(*core.Core)
+
+	// Context timeout of 3 seconds as requested
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+
+	// Base64 encode the code
+	encodedCode := base64.StdEncoding.EncodeToString([]byte(req.Code))
+
+	// Prepare payload for execution engine
+	engineReq := map[string]string{
+		"language": strings.ToLower(req.Language),
+		"code":     encodedCode,
+		"stdin":    req.Stdin,
+	}
+
+	payload, err := json.Marshal(engineReq)
+	if err != nil {
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("failed to marshal request"))
+		return
+	}
+
+	engineURL := co.CodeRunnerEngine // os.Getenv("CODE_RUNNER_ENGINE_API")
+	if engineURL == "" {
+		engineURL = "https://code-execution-engine-797087556919.asia-south1.run.app"
+	}
+
+	proxyReq, err := http.NewRequestWithContext(ctx, "POST", engineURL, bytes.NewBuffer(payload))
+	if err != nil {
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("failed to create request"))
+		return
+	}
+	proxyReq.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(proxyReq)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			SendErrorResponse(w, http.StatusGatewayTimeout, fmt.Errorf("execution timed out"))
+		} else {
+			SendErrorResponse(w, http.StatusBadGateway, fmt.Errorf("failed to call execution engine: %v", err))
+		}
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("failed to read response"))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(resp.StatusCode)
+	w.Write(body)
+}
+
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	// Get the tmpl from request context
 	tmpl := r.Context().Value("template").(*template.Template)
-	
+
 	roomID := r.URL.Query().Get("room_id")
 	if roomID != "" {
 		// Attempt auto-join

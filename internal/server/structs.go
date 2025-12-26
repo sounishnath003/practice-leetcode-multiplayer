@@ -19,17 +19,17 @@ type CollaborativeRoomPageData struct {
 }
 
 type QuestionData struct {
-	Title             string
-	Description       template.HTML
-	Difficulty        string
-	PythonCodeSnippet string
-	JavaCodeSnippet string
+	Title                 string
+	Description           template.HTML
+	Difficulty            string
+	PythonCodeSnippet     string
+	JavaCodeSnippet       string
 	JavascriptCodeSnippet string
-	ProblemLink       string
-	Hints             []string
-	Likes             int64
-	AskedInCompanies  []string
-	Error             string
+	ProblemLink           string
+	Hints                 []string
+	Likes                 int64
+	AskedInCompanies      []string
+	Error                 string
 }
 
 // GraphQLRequest represents the structure of a GraphQL request
@@ -42,4 +42,17 @@ type GraphQLRequest struct {
 type GraphQLResponse struct {
 	Data   json.RawMessage `json:"data"`
 	Errors []interface{}   `json:"errors,omitempty"`
+}
+
+type ExecuteCodeRequest struct {
+	Language string `json:"language"`
+	Code     string `json:"code"`
+	Stdin    string `json:"stdin"`
+}
+
+type ExecuteCodeResponse struct {
+	Stdout  string `json:"stdout"`
+	Stderr  string `json:"stderr"`
+	Message string `json:"message"`
+	Error   bool   `json:"error"`
 }

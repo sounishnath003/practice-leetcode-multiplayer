@@ -3,6 +3,7 @@ package core
 import "log"
 
 type Core struct {
-	Port int
-	Lo   *log.Logger
+	Port             int
+	CodeRunnerEngine string
+	Lo               *log.Logger
 }
