@@ -121,7 +121,7 @@ func FetchQuestionByTitleSlugFromLeetcodeGql(ctx context.Context, titleSlug stri
 	// Create a map to store the filtered CodeSnippets by language slug
 	filteredSnippetsMap := make(map[string]CodeSnippet)
 	for _, snippet := range graphqlResponse.Data.Question.CodeSnippets {
-		if snippet.LangSlug == "java" || snippet.LangSlug == "python3" || snippet.LangSlug == "javascript" {
+		if snippet.LangSlug == "java" || snippet.LangSlug == "python3" || snippet.LangSlug == "javascript" || snippet.LangSlug == "cpp" {
 			filteredSnippetsMap[snippet.LangSlug] = snippet
 		}
 	}

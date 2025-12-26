@@ -22,8 +22,12 @@ function codeboxInit(language, cachedContent) {
         currentEditor = null;
     }
 
+    // Normalize language
+    language = language?.toLowerCase();
+    if (language === 'c++') language = 'cpp';
+
     // Set the boilerplate code for the selected language
-    let boilerplate = languageBoilerplate[language?.toLowerCase()] || languageBoilerplate.default;
+    let boilerplate = languageBoilerplate[language] || languageBoilerplate.default;
 
     // Check the Selected Language boiler plate
     let codeEditorSnippet = undefined;
@@ -37,18 +41,22 @@ function codeboxInit(language, cachedContent) {
     } else if (language === 'javascript') {
         codeEditorSnippet = document.querySelector("#codeSnippetCode #javascriptSnippet");
         if (codeEditorSnippet) boilerplate = codeEditorSnippet.textContent;
+    } else if (language === 'cpp') {
+        codeEditorSnippet = document.querySelector("#codeSnippetCode #cppSnippet");
+        if (codeEditorSnippet) boilerplate = codeEditorSnippet.textContent;
     }
 
     // Use cached content if available, otherwise use boilerplate
     codeboxElement.value = cachedContent !== undefined ? cachedContent : boilerplate;
 
     // If the language is Java, use the "clike" mode
-    language = language === 'java' ? 'text/x-java' : language;
+    if (language === 'java') language = 'text/x-java';
+    if (language === 'cpp') language = 'text/x-c++src';
 
     // Initialize the CodeMirror editor
     currentEditor = CodeMirror.fromTextArea(codeboxElement, {
         lineNumbers: true,
-        mode: { name: language?.toLowerCase() ?? "text/x-java" },
+        mode: { name: language ?? "text/x-java" },
         theme: "eclipse",
         font: "Fira Codee, Consolas, Monaco, 'Lucida Console', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace",
         indent: 4,

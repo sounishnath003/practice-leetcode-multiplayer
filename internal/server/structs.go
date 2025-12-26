@@ -25,6 +25,7 @@ type QuestionData struct {
 	PythonCodeSnippet     string
 	JavaCodeSnippet       string
 	JavascriptCodeSnippet string
+	CppCodeSnippet        string
 	ProblemLink           string
 	Hints                 []string
 	Likes                 int64

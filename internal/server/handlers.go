@@ -49,9 +49,15 @@ func ExecuteCodeHandler(w http.ResponseWriter, r *http.Request) {
 	// Base64 encode the code
 	encodedCode := base64.StdEncoding.EncodeToString([]byte(req.Code))
 
+    // Normalize language
+    lang := strings.ToLower(req.Language)
+    if req.Language == "C++" || lang == "c++" {
+        lang = "cpp"
+    }
+
 	// Prepare payload for execution engine
 	engineReq := map[string]string{
-		"language": strings.ToLower(req.Language),
+		"language": lang,
 		"code":     encodedCode,
 		"stdin":    req.Stdin,
 	}
@@ -144,7 +150,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 				// Prepare data for HomePage
 				data := CollaborativeRoomPageData{
 					Title:                     "Practice Leetcode Multiplayer",
-					SupportedProgrammingLangs: []string{"Python", "Java", "Javascript"},
+					SupportedProgrammingLangs: []string{"Python", "Java", "Javascript", "C++"},
 					Message:                   "Welcome to the room!",
 					Room: RoomResponse{
 						RoomID:       roomID,
@@ -242,6 +248,7 @@ func SearchQuestionHandler(w http.ResponseWriter, r *http.Request) {
 		PythonCodeSnippet:     graphQLOutput.Data.Question.CodeSnippetsMap["python3"].Code,
 		JavaCodeSnippet:       graphQLOutput.Data.Question.CodeSnippetsMap["java"].Code,
 		JavascriptCodeSnippet: graphQLOutput.Data.Question.CodeSnippetsMap["javascript"].Code,
+		CppCodeSnippet:        graphQLOutput.Data.Question.CodeSnippetsMap["cpp"].Code,
 		Likes:                 graphQLOutput.Data.Question.Likes,
 		Hints:                 graphQLOutput.Data.Question.Hints,
 		ProblemLink:           fmt.Sprintf(`https://leetcode.com/problems/%s`, graphQLOutput.Data.Question.TitleSlug),
@@ -279,7 +286,7 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 	// Setting up the data
 	data := CollaborativeRoomPageData{
 		Title:                     "Practice Leetcode Multiplayer",
-		SupportedProgrammingLangs: []string{"Python", "Java", "Javascript"},
+		SupportedProgrammingLangs: []string{"Python", "Java", "Javascript", "C++"},
 		Message:                   "Hello Sounish, Welcome to the Leetcode Practice Problems",
 		Room: RoomResponse{
 			RoomID:       roomID,
@@ -327,7 +334,7 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 	// Setting up the data
 	data := CollaborativeRoomPageData{
 		Title:                     "Practice Leetcode Multiplayer",
-		SupportedProgrammingLangs: []string{"Python", "Java", "Javascript"},
+		SupportedProgrammingLangs: []string{"Python", "Java", "Javascript", "C++"},
 		Message:                   "Hello Sounish, Welcome to the Leetcode Practice Problems",
 		Room: RoomResponse{
 			RoomID:       roomID,
