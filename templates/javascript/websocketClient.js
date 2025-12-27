@@ -191,6 +191,30 @@ class WebSocketClient {
                 if (message.question_meta) this.updateQuestionMeta(message.question_meta);
                 if (message.question_hints) this.updateQuestionHints(message.question_hints);
                 if (message.question_snippets) this.updateQuestionSnippets(message.question_snippets);
+            } else if (message.type === 'execution_output') {
+                console.log("Received execution output:", message);
+                const result = message.content;
+                const outputArea = document.getElementById('output');
+                
+                // Allow update if it's from another user OR if we want to debug/force it
+                if (outputArea && message.user_id !== this.user_id) {
+                    console.log("Updating output area from remote execution");
+                    const runnerRole = message.role || (message.user_id === this.user_id ? "You" : "Peer");
+                    const timestamp = new Date().toLocaleTimeString();
+                    const header = `--- Run by ${runnerRole} at ${timestamp} ---\n`;
+                    
+                    if (result.error) {
+                        outputArea.value = `${header}Error:\n${result.stderr || result.message}`;
+                    } else {
+                        outputArea.value = `${header}${result.stdout}`;
+                        if (result.stderr) {
+                            outputArea.value += `\n--- Stderr ---\n${result.stderr}`;
+                        }
+                    }
+                    this.showNotification(`Remote execution finished`, 'info');
+                } else {
+                    console.log("Skipping execution output update (local user or no output area)");
+                }
             }
 
             // Granular updates for question details
@@ -649,6 +673,7 @@ function runWebsocketProcess() {
 
     // Initialize WebSocket connection
     let wss = new WebSocketClient(roomId, codeEditor, onRemoteLanguageChange);
+    window.wssClient = wss;
 
     // Listen for HTMX swaps to re-initialize editor with new question boilerplate
     document.body.addEventListener('htmx:afterSwap', (event) => {

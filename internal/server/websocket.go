@@ -32,6 +32,8 @@ const (
 	TypeOffer        MessageType = "offer"
 	TypeAnswer       MessageType = "answer"
 	TypeIceCandidate MessageType = "ice-candidate"
+	// Execution output message type
+	TypeExecutionOutput MessageType = "execution_output"
 )
 
 type UserInfo struct {

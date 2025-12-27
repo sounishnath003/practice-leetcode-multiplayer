@@ -41,6 +41,8 @@ function setupRunCode() {
             const code = editorInstance.getValue();
             const language = languageSelect ? languageSelect.value : 'python'; 
             const input = testcasesArea ? testcasesArea.value : '';
+            const roomId = document.querySelector("span#roomId")?.textContent.trim() || "";
+            const userId = window.wssClient?.user_id || "";
 
             console.log(`Executing ${language} code...`);
 
@@ -64,7 +66,9 @@ function setupRunCode() {
                     body: JSON.stringify({
                         language: language,
                         code: code,
-                        stdin: input
+                        stdin: input,
+                        room_id: roomId,
+                        user_id: userId
                     })
                 });
 

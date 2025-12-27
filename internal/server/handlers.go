@@ -38,6 +38,7 @@ func ExecuteCodeHandler(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, http.StatusBadRequest, fmt.Errorf("invalid request body"))
 		return
 	}
+	log.Printf("ExecuteCodeHandler: RoomID=%s, UserID=%s, Language=%s", req.RoomID, req.UserID, req.Language)
 
 	// Grab the templ from the context
 	co := r.Context().Value("core").(*core.Core)
@@ -132,6 +133,46 @@ func ExecuteCodeHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		SendErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("failed to read response"))
 		return
+	}
+
+	// Broadcast execution result to room
+	if req.RoomID != "" {
+		var execResp map[string]interface{}
+		if err := json.Unmarshal(body, &execResp); err == nil {
+			log.Printf("Broadcasting execution output to room %s", req.RoomID)
+			roomManager.mu.RLock()
+			room, exists := roomManager.Rooms[req.RoomID]
+			roomManager.mu.RUnlock()
+
+			if exists {
+				var role string
+				// Find role of the user
+				room.mu.RLock()
+				for client := range room.Clients {
+					if client.UserID == req.UserID {
+						role = client.Role
+						break
+					}
+				}
+				room.mu.RUnlock()
+
+				msg := &WebSocketMessage{
+					Type:    TypeExecutionOutput,
+					RoomID:  req.RoomID,
+					UserID:  req.UserID,
+					Role:    role,
+					Content: execResp,
+				}
+				// Use non-blocking send to avoid hanging if channel is full
+				select {
+				case room.Broadcast <- msg:
+				default:
+					log.Printf("Warning: room %s broadcast channel full, dropping execution output", req.RoomID)
+				}
+			}
+		} else {
+			log.Printf("Failed to unmarshal execution response for broadcast: %v", err)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

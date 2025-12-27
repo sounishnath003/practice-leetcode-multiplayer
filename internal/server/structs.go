@@ -49,6 +49,8 @@ type ExecuteCodeRequest struct {
 	Language string `json:"language"`
 	Code     string `json:"code"`
 	Stdin    string `json:"stdin"`
+	RoomID   string `json:"room_id"`
+	UserID   string `json:"user_id"`
 }
 
 type ExecuteCodeResponse struct {
