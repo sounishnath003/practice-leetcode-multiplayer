@@ -13,10 +13,6 @@ html,
     font-style: normal;
 }
 
-.CodeMirror {
-    height: 100vh;
-}
-
 div>.CodeMirror-lines {
     font-family: 'Fira Code, monospace';
     font-size: 16px;

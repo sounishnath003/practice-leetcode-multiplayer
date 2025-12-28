@@ -79,6 +79,8 @@ def execute_code(language: str, codeb64encoded: str, stdin: str) -> Optional[Cod
     code_file_name = None
     compiled_file = None
     temp_dir = None
+    # 3-second timeout is enforced for all languages below
+    TIMEOUT_SECONDS = 3
     try:
         config = LANGUAGE_CONFIG.get(language)
         if not config:
@@ -112,20 +114,20 @@ def execute_code(language: str, codeb64encoded: str, stdin: str) -> Optional[Cod
                 )
             compiled_file = os.path.join(temp_dir, "solution")
 
-        # Execute code with timeout
+        # Execute code with timeout (3 seconds for all)
         execute_cmd = config.execute_command
         if compiled_file:
             execute_cmd = [cmd.replace("./solution", compiled_file) for cmd in execute_cmd]
         else:
             execute_cmd = execute_cmd + [code_file_name]
 
-        # Use subprocess built-in timeout
+        # Use subprocess built-in timeout (same for all languages)
         process = subprocess.run(
             execute_cmd,
             input=stdin.encode("utf-8"),
             capture_output=True,
             cwd=temp_dir,
-            timeout=3
+            timeout=TIMEOUT_SECONDS
         )
 
         return CodeOutput(
@@ -138,7 +140,7 @@ def execute_code(language: str, codeb64encoded: str, stdin: str) -> Optional[Cod
     except subprocess.TimeoutExpired:
         return CodeOutput(
             stdout="",
-            stderr="[TimeLimitExceeded]: Code execution timed out after 3 seconds",
+            stderr=f"[TimeLimitExceeded]: Code execution timed out after {TIMEOUT_SECONDS} seconds",
             message="Time limit exceeded",
             error=True
         )
@@ -195,7 +197,9 @@ def health_check():
 
 @app.route("/", methods=["POST", "OPTIONS"])
 def execute_code_handler():
-    """HTTP Handler to execute code, only for allowed domains."""
+    """HTTP Handler to execute code, only for allowed domains.
+    NOTE: Code execution in ALL languages is limited to 3 seconds total runtime.
+    """
     allowed_origins = [
         "http://localhost:3000",
         "https://practice-leetcode-multiplayer-797087556919.asia-south1.run.app"
