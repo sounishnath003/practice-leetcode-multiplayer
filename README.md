@@ -7,7 +7,7 @@ This project is a multiplayer platform for practicing Leetcode problems. It allo
 ## YouTube Demo
 
 [Practice Leetcode Multiplayer | Collaborate and practice together | Go + HTMX
-](https://www.youtube.com/watch?v=c63zSC71rVM)
+](https://www.youtube.com/watch?v=3QiOIUQptu8)
 
 ## Deployed Service URL: 
 
