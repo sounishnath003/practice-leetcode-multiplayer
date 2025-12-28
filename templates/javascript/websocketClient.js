@@ -2,7 +2,7 @@
 const languageBoilerplate = {
     python: "# Write your Python code here...\n\nif __name__ == '__main__':\n    print('Hello, Python!')",
     javascript: "// Write your JavaScript code here...\n\nconsole.log('Hello, JavaScript!');",
-    java: "// Write your Java code here...\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, Java!\");\n    }\n}",
+    java: "// Write your Java code here...\n\npublic class Solution {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, Java!\");\n    }\n}",
     c: "// Write your C code here...\n\n#include <stdio.h>\n\nint main() {\n    printf(\"Hello, C!\\n\");\n    return 0;\n}",
     cpp: "// Write your C++ code here...\n\n#include <iostream>\n\nint main() {\n    std::cout << \"Hello, C++!\" << std::endl;\n    return 0;\n}",
     go: "// Write your Go code here...\n\npackage main\n\nimport \"fmt\"\n\nfunc main() {\n    fmt.Println(\"Hello, Go!\")\n}",
@@ -47,7 +47,9 @@ function codeboxInit(language, cachedContent) {
     }
 
     // Use cached content if available, otherwise use boilerplate
-    codeboxElement.value = cachedContent !== undefined ? cachedContent : boilerplate;
+    console.log({cachedContent, boilerplate, language, code: languageBoilerplate[language]});
+    
+    codeboxElement.value = cachedContent !== undefined ? cachedContent : (boilerplate.trim().length == 0 ? languageBoilerplate[language] : boilerplate.trim());
 
     // If the language is Java, use the "clike" mode
     if (language === 'java') language = 'text/x-java';
@@ -92,7 +94,7 @@ class WebSocketClient {
         this.notificationContainer = this.createNotificationContainer();
         this.joinedUserElement = document.querySelector('#joinedUser');
         this.webrtcHandler = null;
-        
+
         // Call readiness state
         this.localCallReady = false;
         this.remoteCallReady = false;
@@ -166,7 +168,7 @@ class WebSocketClient {
 
                 // Sync initial state
                 this.initializeWebRTC(); // Ensure WebRTC is ready for late joiners
-                
+
                 if (message.language && this.onLanguageChange) {
                     this.onLanguageChange(message.language);
                 }
@@ -195,14 +197,14 @@ class WebSocketClient {
                 console.log("Received execution output:", message);
                 const result = message.content;
                 const outputArea = document.getElementById('output');
-                
+
                 // Allow update if it's from another user OR if we want to debug/force it
                 if (outputArea && message.user_id !== this.user_id) {
                     console.log("Updating output area from remote execution");
                     const runnerRole = message.role || (message.user_id === this.user_id ? "You" : "Peer");
                     const timestamp = new Date().toLocaleTimeString();
                     const header = `--- Run by ${runnerRole} at ${timestamp} ---\n`;
-                    
+
                     if (result.error) {
                         outputArea.value = `${header}Error:\n${result.stderr || result.message}`;
                     } else {
@@ -498,14 +500,14 @@ class WebSocketClient {
         if (this.callTimerInterval) return;
         const startTime = Date.now();
         const status = document.getElementById('callStatus');
-        
+
         const update = () => {
             const diff = Math.floor((Date.now() - startTime) / 1000);
             const mins = Math.floor(diff / 60).toString().padStart(2, '0');
             const secs = (diff % 60).toString().padStart(2, '0');
             if (status) status.textContent = `● In Call • ${mins}:${secs}`;
         };
-        
+
         update(); // Initial update
         this.callTimerInterval = setInterval(update, 1000);
     }
@@ -538,7 +540,7 @@ class WebSocketClient {
 
         this.localCallReady = true;
         this.updateCallUI('waiting');
-        
+
         // Notify peer we are ready
         if (this.wss.readyState === WebSocket.OPEN) {
             this.wss.send(JSON.stringify({
@@ -638,18 +640,18 @@ class WebSocketClient {
 function runWebsocketProcess() {
     const roomId = document.querySelector("span#roomId").textContent.trim();
     const languageSelector = document.querySelector('#programmingLanguages');
-    
+
     // Client-side cache for code per language
     const codeCache = new Map();
     let lastLanguage = 'default';
 
     // Initialize with the default language
-    let codeEditor = codeboxInit(); 
+    let codeEditor = codeboxInit();
 
     // Callback for remote language changes
     const onRemoteLanguageChange = (newLanguage) => {
         const normalizedLanguage = newLanguage.toLowerCase();
-        
+
         // Save current code before switching
         if (codeEditor) {
             codeCache.set(lastLanguage, codeEditor.getValue());
@@ -663,7 +665,7 @@ function runWebsocketProcess() {
                     break;
                 }
             }
-            
+
             // Update tracking and init editor with cached code
             lastLanguage = normalizedLanguage;
             codeEditor = codeboxInit(normalizedLanguage, codeCache.get(normalizedLanguage));
@@ -680,17 +682,17 @@ function runWebsocketProcess() {
         // Only trigger if the question block was swapped
         if (event.target.id === 'questionBlock' || event.detail.target.id === 'questionBlock') {
             console.log("Question swapped, refreshing editor boilerplate...");
-            
+
             // Clear cache as we have a new question
             codeCache.clear();
-            
+
             // Re-initialize editor with current language to pull new boilerplate from DOM
             const currentLang = languageSelector.value.toLowerCase();
             codeEditor = codeboxInit(currentLang);
-            
+
             // Update tracking
             lastLanguage = currentLang;
-            
+
             // Update WebSocket client reference
             wss.updateEditor(codeEditor);
         }

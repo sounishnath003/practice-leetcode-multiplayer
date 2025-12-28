@@ -50,11 +50,11 @@ func ExecuteCodeHandler(w http.ResponseWriter, r *http.Request) {
 	// Base64 encode the code
 	encodedCode := base64.StdEncoding.EncodeToString([]byte(req.Code))
 
-    // Normalize language
-    lang := strings.ToLower(req.Language)
-    if req.Language == "C++" || lang == "c++" {
-        lang = "cpp"
-    }
+	// Normalize language
+	lang := strings.ToLower(req.Language)
+	if req.Language == "C++" || lang == "c++" {
+		lang = "cpp"
+	}
 
 	// Prepare payload for execution engine
 	engineReq := map[string]string{
@@ -98,23 +98,17 @@ func ExecuteCodeHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-				proxyReq.Header.Set("Authorization", "Bearer "+token.AccessToken)
+		proxyReq.Header.Set("Authorization", "Bearer "+token.AccessToken)
 
-			}
+	}
 
-		
+	// Set Origin header to satisfy the engine's domain check
 
-		    // Set Origin header to satisfy the engine's domain check
+	proxyReq.Header.Set("Origin", "https://practice-leetcode-multiplayer-797087556919.asia-south1.run.app")
 
-		    proxyReq.Header.Set("Origin", "https://practice-leetcode-multiplayer-797087556919.asia-south1.run.app")
+	client := &http.Client{}
 
-		
-
-			client := &http.Client{}
-
-			resp, err := client.Do(proxyReq)
-
-		
+	resp, err := client.Do(proxyReq)
 
 	if err != nil {
 
