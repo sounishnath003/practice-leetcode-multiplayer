@@ -60,7 +60,7 @@ function codeboxInit(language, cachedContent) {
         lineNumbers: true,
         mode: { name: language ?? "text/x-java" },
         theme: "eclipse",
-        font: "Fira Codee, Consolas, Monaco, 'Lucida Console', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace",
+        font: "Fira Code, Consolas, Monaco, 'Lucida Console', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace",
         indent: 4,
         indentUnit: 4,
         smartIndent: true,
