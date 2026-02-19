@@ -174,3 +174,24 @@ document.body.addEventListener('htmx:afterSwap', () => {
     setupIoToggle();
     setupRunCode();
 });
+
+// Global keybinding: Cmd+Enter / Ctrl+Enter to run code
+document.addEventListener('keydown', (event) => {
+    const isEnter = event.key === 'Enter';
+    const isModifier = event.metaKey || event.ctrlKey;
+    if (!isEnter || !isModifier) return;
+
+    // Avoid triggering when focused on buttons or non-editable controls
+    const target = event.target;
+    const tag = target.tagName;
+    const isTextInput = tag === 'TEXTAREA' || (tag === 'INPUT' && target.type === 'text');
+    const isContentEditable = target.isContentEditable;
+
+    if (!(isTextInput || isContentEditable)) return;
+
+    event.preventDefault();
+    const runBtn = document.getElementById('run-code-btn');
+    if (runBtn) {
+        runBtn.click();
+    }
+});

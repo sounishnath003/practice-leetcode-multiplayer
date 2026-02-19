@@ -52,10 +52,17 @@
             {{ end }}
         </select>
 
-        <!-- run code button -->
-        <div><button id="run-code-btn"
-                class="min-w-full text-white cursor-pointer bg-red-700 hover:bg-red-800 dark:bg-red-600 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-xs p-1 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
-                type="submit">Run code</button></div>
+        <!-- run code & call controls -->
+        <div class="flex items-center gap-2">
+            <button id="run-code-btn"
+                class="px-3 py-1 bg-red-600 text-white cursor-pointer rounded-lg hover:bg-red-700 shadow-lg transition-colors text-xs font-medium dark:bg-red-600 dark:hover:bg-red-700"
+                type="submit">
+                Run code
+            </button>
+            <div id="callControls" class="flex items-center gap-2">
+                <!-- Populated by WebSocketClient.createAudioControls -->
+            </div>
+        </div>
     </div>
 
     <!-- Main Section area -->

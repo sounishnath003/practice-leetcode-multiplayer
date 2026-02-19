@@ -441,32 +441,31 @@ class WebSocketClient {
     }
 
     createAudioControls() {
-        const controlsContainer = document.createElement('div');
-        controlsContainer.className = 'fixed bottom-4 left-4 z-50 flex flex-col gap-2 items-start';
+        const controlsContainer = document.getElementById('callControls');
+        if (!controlsContainer) return;
+
+        // Clear any existing controls to avoid duplicates
+        controlsContainer.innerHTML = '';
 
         const statusText = document.createElement('div');
         statusText.id = 'callStatus';
-        statusText.className = 'text-xs text-gray-500 font-medium hidden dark:text-gray-400';
+        statusText.className = 'hidden text-xs font-medium text-red-600 dark:text-red-400';
         statusText.textContent = '';
 
         const callButton = document.createElement('button');
         callButton.id = 'callButton';
-        callButton.className = 'px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 shadow-lg transition-colors';
+        callButton.className = 'px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 shadow-lg transition-colors text-xs';
         callButton.textContent = 'Start Call';
         callButton.onclick = () => this.handleCallButtonClick();
 
         controlsContainer.appendChild(statusText);
         controlsContainer.appendChild(callButton);
-        document.body.appendChild(controlsContainer);
     }
 
     handleCallButtonClick() {
-        if (this.localCallReady && this.remoteCallReady) {
-            this.endCall(); // If connected, button ends call
-        } else if (this.localCallReady) {
-            this.endCall(); // If waiting, cancel
-        } else {
-            this.startCall(); // If idle, start
+        // One-shot: allow starting a call only from idle state.
+        if (!this.localCallReady && !this.remoteCallReady) {
+            this.startCall();
         }
     }
 
@@ -479,21 +478,26 @@ class WebSocketClient {
             case 'idle':
                 this.stopCallTimer();
                 btn.textContent = 'Start Call';
-                btn.className = 'px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 shadow-lg transition-colors';
+                btn.className = 'px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 shadow-lg transition-colors text-xs';
+                btn.disabled = false;
+                btn.classList.remove('hidden');
                 status.textContent = '';
                 status.classList.add('hidden');
                 break;
             case 'waiting':
                 this.stopCallTimer();
-                btn.textContent = 'Cancel Call';
-                btn.className = 'px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 shadow-lg transition-colors';
+                // Hide button while waiting; user cannot cancel/end manually.
+                btn.disabled = true;
+                btn.classList.add('hidden');
+                status.className = 'text-xs font-medium text-red-600 dark:text-red-400';
                 status.textContent = 'Waiting for peer...';
                 status.classList.remove('hidden');
                 break;
             case 'connected':
-                btn.textContent = 'End Call';
-                btn.className = 'px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 shadow-lg transition-colors animate-pulse';
-                status.className = 'text-xs text-red-500 font-bold dark:text-red-400';
+                // Keep button hidden; show only status + timer.
+                btn.disabled = true;
+                btn.classList.add('hidden');
+                status.className = 'text-xs font-bold text-red-600 dark:text-red-400';
                 status.classList.remove('hidden');
                 this.startCallTimer();
                 break;
