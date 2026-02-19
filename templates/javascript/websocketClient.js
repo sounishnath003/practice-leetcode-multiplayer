@@ -60,9 +60,9 @@ function codeboxInit(language, cachedContent) {
         lineNumbers: true,
         mode: { name: language ?? "text/x-java" },
         theme: "eclipse",
-        font: "Fira Code, Consolas, Monaco, 'Lucida Console', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace",
         indent: 4,
         indentUnit: 4,
+        indentWithTabs: false,
         smartIndent: true,
         moveOnDrag: true,
         autoCloseTags: true,
@@ -72,7 +72,11 @@ function codeboxInit(language, cachedContent) {
         foldGutter: true,
         gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
         // extraKeys: { "Alt-F": "findPersistent", "Cmd-/": 'toggleComment' },
-        extraKeys: { 'Ctrl-/': 'toggleComment', 'Cmd-/': 'toggleComment' },
+        extraKeys: {
+            'Ctrl-/': 'toggleComment',
+            'Cmd-/': 'toggleComment',
+            'Tab': (cm) => cm.execCommand('insertSoftTab'),
+        },
         hintOptions: {
             completeSingle: false, // Prevent auto-selecting the first suggestion
         },
@@ -438,7 +442,7 @@ class WebSocketClient {
 
     createAudioControls() {
         const controlsContainer = document.createElement('div');
-        controlsContainer.className = 'fixed bottom-4 right-4 z-50 flex flex-col gap-2 items-end';
+        controlsContainer.className = 'fixed bottom-4 left-4 z-50 flex flex-col gap-2 items-start';
 
         const statusText = document.createElement('div');
         statusText.id = 'callStatus';

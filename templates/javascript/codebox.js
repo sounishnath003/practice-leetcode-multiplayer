@@ -3,6 +3,47 @@
 // This script handles the "Run Code" button logic.
 console.log("Codebox execution script loaded.");
 
+function setIoPanelOpen(isOpen) {
+    const panel = document.getElementById("io-panel");
+    const btn = document.getElementById("io-toggle-btn");
+    if (!panel || !btn) return;
+
+    panel.classList.toggle("hidden", !isOpen);
+    btn.textContent = isOpen ? "Hide" : "Show";
+    try {
+        localStorage.setItem("ioPanelOpen", isOpen ? "1" : "0");
+    } catch (_) {
+        // ignore
+    }
+}
+
+function getIoPanelInitialState() {
+    try {
+        return localStorage.getItem("ioPanelOpen") === "1";
+    } catch (_) {
+        return false;
+    }
+}
+
+function setupIoToggle() {
+    const ioToggleBtn = document.getElementById("io-toggle-btn");
+    if (!ioToggleBtn) return;
+
+    // De-dupe listeners (HTMX swaps can re-run this script)
+    const newBtn = ioToggleBtn.cloneNode(true);
+    ioToggleBtn.parentNode.replaceChild(newBtn, ioToggleBtn);
+
+    // Apply initial state (default closed)
+    setIoPanelOpen(getIoPanelInitialState());
+
+    newBtn.addEventListener("click", () => {
+        const panel = document.getElementById("io-panel");
+        if (!panel) return;
+        const isOpen = !panel.classList.contains("hidden");
+        setIoPanelOpen(!isOpen);
+    });
+}
+
 function setupRunCode() {
     const runCodeBtn = document.getElementById('run-code-btn');
     
@@ -17,6 +58,7 @@ function setupRunCode() {
         
         newBtn.addEventListener('click', async () => {
             console.log("Run Code button clicked.");
+            setIoPanelOpen(true);
 
             // Access the global currentEditor instance created in websocketClient.js
             // or try to find the CodeMirror instance on the textarea
@@ -38,7 +80,11 @@ function setupRunCode() {
             const testcasesArea = document.getElementById('testcases');
             const outputArea = document.getElementById('output');
 
-            const code = editorInstance.getValue();
+            let code = editorInstance.getValue();
+            const normalizedCode = code.replace(/\t/g, '    ');
+            if (normalizedCode !== code) {
+                code = normalizedCode;
+            }
             const language = languageSelect ? languageSelect.value : 'python'; 
             const input = testcasesArea ? testcasesArea.value : '';
             const roomId = document.querySelector("span#roomId")?.textContent.trim() || "";
@@ -105,6 +151,7 @@ function setupRunCode() {
 }
 
 // Run setup immediately
+setupIoToggle();
 setupRunCode();
 
 // Also observe for DOM changes (in case of HTMX swaps)
@@ -121,8 +168,9 @@ const observer = new MutationObserver((mutations) => {
     }
 });
 
-// If HTMX is used, listen for afterSwap
+// If HTMX is used, listen for afterSwap to re-wire controls after template swaps
 document.body.addEventListener('htmx:afterSwap', () => {
-   console.log("HTMX swap detected, re-setting up Run Code button.");
-   setupRunCode();
+    console.log("HTMX swap detected, re-setting up CodeBox controls.");
+    setupIoToggle();
+    setupRunCode();
 });
