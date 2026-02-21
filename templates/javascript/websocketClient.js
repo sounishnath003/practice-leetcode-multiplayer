@@ -52,14 +52,17 @@ function codeboxInit(language, cachedContent) {
     codeboxElement.value = cachedContent !== undefined ? cachedContent : (boilerplate.trim().length == 0 ? languageBoilerplate[language] : boilerplate.trim());
 
     // If the language is Java, use the "clike" mode
-    if (language === 'java') language = 'text/x-java';
-    if (language === 'cpp') language = 'text/x-c++src';
+    const modeName = language === 'java' ? 'text/x-java' : (language === 'cpp' ? 'text/x-c++src' : language);
+    const isPython = language === 'python';
+
+    // Fold: Python uses indent-based folding; others use brace folding
+    const foldRangeFinder = (typeof CodeMirror !== 'undefined' && CodeMirror.fold) && (isPython && CodeMirror.fold.indent ? CodeMirror.fold.indent : CodeMirror.fold.brace);
 
     // Initialize the CodeMirror editor
     currentEditor = CodeMirror.fromTextArea(codeboxElement, {
         lineNumbers: true,
-        mode: { name: language ?? "text/x-java" },
-        theme: "default", // "eclipse",
+        mode: { name: modeName ?? "text/x-java" },
+        theme: "default",
         indent: 4,
         indentUnit: 4,
         indentWithTabs: false,
@@ -71,16 +74,38 @@ function codeboxInit(language, cachedContent) {
         matchBrackets: true,
         foldGutter: true,
         gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
-        // extraKeys: { "Alt-F": "findPersistent", "Cmd-/": 'toggleComment' },
+        foldOptions: foldRangeFinder ? { rangeFinder: foldRangeFinder } : undefined,
         extraKeys: {
             'Ctrl-/': 'toggleComment',
             'Cmd-/': 'toggleComment',
             'Tab': (cm) => cm.execCommand('insertSoftTab'),
+            'Ctrl-Space': 'autocomplete',
+            'Cmd-Space': 'autocomplete',
         },
         hintOptions: {
-            completeSingle: false, // Prevent auto-selecting the first suggestion
+            completeSingle: false,
+            hint: typeof CodeMirror !== 'undefined' && CodeMirror.hint && CodeMirror.hint.anyword ? CodeMirror.hint.anyword : undefined,
         },
     });
+
+    // Optional: auto-show word completion after typing (delay to avoid flashing)
+    if (currentEditor && CodeMirror.hint && CodeMirror.hint.anyword) {
+        let hintTimeout = null;
+        currentEditor.on('inputRead', (cm, change) => {
+            if (change.origin === 'paste' || change.origin === 'setValue') return;
+            clearTimeout(hintTimeout);
+            const line = cm.getLine(cm.getCursor().line);
+            const cursor = cm.getCursor();
+            const wordStart = cursor.ch;
+            const token = cm.getTokenAt(cursor);
+            const len = token && token.string.length >= 2 ? 1 : 0;
+            if (len) {
+                hintTimeout = setTimeout(() => {
+                    cm.showHint({ completeSingle: false, hint: CodeMirror.hint.anyword });
+                }, 400);
+            }
+        });
+    }
 
     return currentEditor;
 }
