@@ -48,7 +48,7 @@ function codeboxInit(language, cachedContent) {
 
     // Use cached content if available, otherwise use boilerplate
     console.log({cachedContent, boilerplate, language, code: languageBoilerplate[language]});
-    
+
     codeboxElement.value = cachedContent !== undefined ? cachedContent : (boilerplate.trim().length == 0 ? languageBoilerplate[language] : boilerplate.trim());
 
     // If the language is Java, use the "clike" mode
@@ -59,7 +59,7 @@ function codeboxInit(language, cachedContent) {
     currentEditor = CodeMirror.fromTextArea(codeboxElement, {
         lineNumbers: true,
         mode: { name: language ?? "text/x-java" },
-        theme: "eclipse",
+        theme: "default", // "eclipse",
         indent: 4,
         indentUnit: 4,
         indentWithTabs: false,
@@ -258,8 +258,8 @@ class WebSocketClient {
 
             this.observer = new MutationObserver((mutations) => {
                 // Check if the mutation is relevant to avoid infinite loops
-                // (Though with granular updates, loops are less likely if we check content equality, 
-                // but simplicity first: just send if it's a DOM change we didn't cause? 
+                // (Though with granular updates, loops are less likely if we check content equality,
+                // but simplicity first: just send if it's a DOM change we didn't cause?
                 // Actually, since we update innerHTML of children, that triggers observer.
                 // We need to temporarily disconnect observer during updates or use a flag.)
                 this.#sendCode(this.editor.getValue());
@@ -592,7 +592,7 @@ class WebSocketClient {
         if (targetUserId) {
             try {
                 // Determine who initiates based on ID to avoid glare (though handled in webrtc.js too)
-                // Or just both try, and glare logic handles it. 
+                // Or just both try, and glare logic handles it.
                 // Since both are 'ready', auto-connecting is fine.
                 await this.webrtcHandler.initiateCall(targetUserId);
                 this.showNotification('Connecting audio...', 'success');
