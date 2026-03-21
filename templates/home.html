@@ -68,10 +68,14 @@
     <!-- Main Section area -->
     <div id="mainSectionMultiplayer"
         class="flex flex-col md:flex-row flex-1 overflow-hidden items-start justify-start px-2 dark:text-white">
-        <div class="border-r dark:border-gray-700 h-full overflow-y-auto min-w-[550px] w-[550px] shrink-0 p-2 scrollbar-thin">
+        <div id="leftPane" class="h-full overflow-y-auto overflow-x-hidden min-w-[200px] w-[550px] shrink-0 p-2 scrollbar-thin">
             {{ template "QuestionBlock" }}
         </div>
-        <div class="w-full h-full overflow-hidden">
+        
+        <!-- Draggable Separator -->
+        <div id="dragbar" class="w-1.5 md:w-2 cursor-col-resize bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-500 shrink-0 h-full z-10 hidden md:block select-none transition-colors"></div>
+
+        <div id="rightPane" class="flex-1 w-full h-full overflow-hidden min-w-[200px]">
             {{template "CodeBox"}}
         </div>
     </div>
@@ -79,6 +83,63 @@
 </div>
 
 <script>
+    (function initDragbar() {
+        const dragbar = document.getElementById('dragbar');
+        const leftPane = document.getElementById('leftPane');
+        const rightPane = document.getElementById('rightPane');
+        const container = document.getElementById('mainSectionMultiplayer');
+        
+        if (!dragbar || !leftPane || !rightPane || !container) return;
+        
+        let isDragging = false;
+        
+        dragbar.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none'; // Prevent text selection
+            
+            // Disable pointer events on panes to prevent CodeMirror/iframes from stealing mousemove/mouseup
+            leftPane.style.pointerEvents = 'none';
+            rightPane.style.pointerEvents = 'none';
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const containerRect = container.getBoundingClientRect();
+            // Calculate relative position inside the container
+            let newWidth = e.clientX - containerRect.left;
+            
+            // Constrain limits
+            const minWidth = 200;
+            const maxWidth = containerRect.width - 200; // Leave space for code editor
+            
+            if (newWidth < minWidth) newWidth = minWidth;
+            if (newWidth > maxWidth) newWidth = maxWidth;
+            
+            leftPane.style.width = `${newWidth}px`;
+            leftPane.style.flexBasis = `${newWidth}px`;
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                
+                // Re-enable pointer events
+                leftPane.style.pointerEvents = '';
+                rightPane.style.pointerEvents = '';
+                
+                // Refresh CodeMirror so it adapts properly to new container size
+                const cmElement = document.querySelector('.CodeMirror');
+                if (cmElement && cmElement.CodeMirror) {
+                    cmElement.CodeMirror.refresh();
+                }
+            }
+        });
+    })();
+
     function copyJoinLink(roomId) {
         const link = window.location.origin + "/?room_id=" + roomId;
         navigator.clipboard.writeText(link).then(() => {

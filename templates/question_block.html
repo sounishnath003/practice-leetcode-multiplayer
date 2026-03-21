@@ -32,17 +32,17 @@
         {{end}}
     </div>
 
-    <div class="tracking-normal text-content text-sm text-balance" id="problemDescription">
+    <div class="tracking-normal text-content text-sm break-words overflow-x-hidden" id="problemDescription">
         {{ .Description}}
     </div>
 
     <div id="questionHintsSection">
         {{ if .Hints }}
-        <div class="text-xs text-wrap w-full">
+        <div class="text-xs break-words w-full">
             <h2 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Hints:</h2>
-            <ul id="questionHints" class="max-w-md space-y-1 text-gray-700 list-disc list-inside dark:text-gray-200">
+            <ul id="questionHints" class="w-full space-y-1 text-gray-700 list-disc list-inside dark:text-gray-200">
                 {{ range .Hints}}
-                <li>{{ . }}</li>
+                <li class="break-words whitespace-normal">{{ . }}</li>
                 {{ end }}
             </ul>
         </div>

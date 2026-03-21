@@ -35,3 +35,27 @@ html,
     font-family: url('/static/fonts/droid-sans-mono.ttf'), 'Fira Code, monospace';
     font-size: 16px;
 } */
+
+/* Hide horizontal scrollbar on question descriptions */
+.text-content pre,
+.text-content code {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+}
+
+.text-content img {
+    max-width: 100% !important;
+    height: auto !important;
+    object-fit: contain;
+}
+
+/* Hide the vertical scrollbar but maintain scrolling functionality */
+#leftPane {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none;    /* Firefox */
+}
+
+#leftPane::-webkit-scrollbar {
+    display: none;            /* Chrome, Safari and Opera */
+}

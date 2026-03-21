@@ -12,6 +12,100 @@ const languageBoilerplate = {
     default: "// Write your code here...\n// You can select language to get the starter snippet from leetcode...\n// Start typing the 'QuestionSlug: two-sum' from leetcode, to load the question information",
 };
 
+// Language keywords for custom intellisense
+const languageKeywords = {
+    python: [
+        "False", "None", "True", "and", "as", "assert", "async", "await", "break", "class", "continue",
+        "def", "del", "elif", "else", "except", "finally", "for", "from", "global", "if", "import",
+        "in", "is", "lambda", "nonlocal", "not", "or", "pass", "raise", "return", "try", "while", "with", "yield",
+        "abs", "all", "any", "bin", "bool", "bytearray", "bytes", "callable", "chr", "classmethod", "compile",
+        "complex", "delattr", "dict", "dir", "divmod", "enumerate", "eval", "exec", "filter", "float", "format",
+        "frozenset", "getattr", "globals", "hasattr", "hash", "help", "hex", "id", "input", "int", "isinstance",
+        "issubclass", "iter", "len", "list", "locals", "map", "max", "memoryview", "min", "next", "object",
+        "oct", "open", "ord", "pow", "print", "property", "range", "repr", "reversed", "round", "set", "setattr",
+        "slice", "sorted", "staticmethod", "str", "sum", "super", "tuple", "type", "vars", "zip",
+        "math", "os", "sys", "re", "json", "datetime", "collections", "itertools", "functools", "random", "time"
+    ],
+    javascript: [
+        "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete", "do", "else",
+        "export", "extends", "finally", "for", "function", "if", "import", "in", "instanceof", "let", "new",
+        "return", "super", "switch", "this", "throw", "try", "typeof", "var", "void", "while", "with", "yield",
+        "Array", "Boolean", "Date", "Error", "Function", "JSON", "Math", "Number", "Object", "Promise", "RegExp", "String",
+        "console", "document", "window", "setTimeout", "setInterval", "clearTimeout", "clearInterval"
+    ],
+    java: [
+        "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class", "const", "continue",
+        "default", "do", "double", "else", "enum", "extends", "final", "finally", "float", "for", "goto", "if",
+        "implements", "import", "instanceof", "int", "interface", "long", "native", "new", "package", "private",
+        "protected", "public", "return", "short", "static", "strictfp", "super", "switch", "synchronized", "this",
+        "throw", "throws", "transient", "try", "void", "volatile", "while",
+        "String", "Object", "Integer", "Double", "Boolean", "System", "Math", "Thread", "Runnable", "List", "ArrayList",
+        "Map", "HashMap", "Set", "HashSet", "Collections", "Arrays", "Scanner", "out", "println", "print"
+    ],
+    cpp: [
+        "alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand", "bitor", "bool", "break", "case", "catch",
+        "char", "char16_t", "char32_t", "class", "compl", "const", "constexpr", "const_cast", "continue", "decltype",
+        "default", "delete", "do", "double", "dynamic_cast", "else", "enum", "explicit", "export", "extern", "false",
+        "float", "for", "friend", "goto", "if", "inline", "int", "long", "mutable", "namespace", "new", "noexcept",
+        "not", "not_eq", "nullptr", "operator", "or", "or_eq", "private", "protected", "public", "register", "reinterpret_cast",
+        "return", "short", "signed", "sizeof", "static", "static_assert", "static_cast", "struct", "switch", "template",
+        "this", "thread_local", "throw", "true", "try", "typedef", "typeid", "typename", "union", "unsigned", "using",
+        "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq",
+        "std", "cout", "cin", "endl", "string", "vector", "map", "set", "unordered_map", "unordered_set", "list", "deque",
+        "queue", "stack", "algorithm", "sort", "find", "reverse", "printf", "scanf"
+    ]
+};
+
+function customHint(cm, options) {
+    const cursor = cm.getCursor();
+    const token = cm.getTokenAt(cursor);
+    
+    let mode = cm.getMode().name;
+    let langKey = mode === "text/x-java" ? "java" : 
+                  mode === "text/x-c++src" ? "cpp" : 
+                  mode === "python" ? "python" : 
+                  mode === "javascript" ? "javascript" : null;
+
+    let keywords = langKey ? languageKeywords[langKey] : [];
+
+    let start = token.start;
+    let end = cursor.ch;
+    let word = token.string.slice(0, cursor.ch - token.start);
+    
+    if (!/^[a-zA-Z_0-9]+$/.test(word)) {
+        word = "";
+        start = end;
+    }
+    
+    let list = keywords.filter(k => k.toLowerCase().startsWith(word.toLowerCase()));
+
+    let anywordHints = CodeMirror.hint.anyword ? CodeMirror.hint.anyword(cm, options) : {list: []};
+    if (anywordHints && anywordHints.list) {
+        anywordHints.list.forEach(w => {
+            if (!list.includes(w) && w.toLowerCase().startsWith(word.toLowerCase())) {
+                list.push(w);
+            }
+        });
+    }
+
+    list = [...new Set(list)].sort((a, b) => {
+        let aLower = a.toLowerCase();
+        let bLower = b.toLowerCase();
+        let wordLower = word.toLowerCase();
+        let aStarts = aLower.startsWith(wordLower);
+        let bStarts = bLower.startsWith(wordLower);
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        return a.localeCompare(b);
+    });
+
+    return {
+        list: list,
+        from: CodeMirror.Pos(cursor.line, start),
+        to: CodeMirror.Pos(cursor.line, end)
+    };
+}
+
 let currentEditor = null; // Keep track of the current CodeMirror editor instance
 
 function codeboxInit(language, cachedContent) {
@@ -84,24 +178,23 @@ function codeboxInit(language, cachedContent) {
         },
         hintOptions: {
             completeSingle: false,
-            hint: typeof CodeMirror !== 'undefined' && CodeMirror.hint && CodeMirror.hint.anyword ? CodeMirror.hint.anyword : undefined,
+            hint: customHint,
         },
     });
 
     // Optional: auto-show word completion after typing (delay to avoid flashing)
-    if (currentEditor && CodeMirror.hint && CodeMirror.hint.anyword) {
+    if (currentEditor) {
         let hintTimeout = null;
         currentEditor.on('inputRead', (cm, change) => {
             if (change.origin === 'paste' || change.origin === 'setValue') return;
             clearTimeout(hintTimeout);
-            const line = cm.getLine(cm.getCursor().line);
             const cursor = cm.getCursor();
-            const wordStart = cursor.ch;
             const token = cm.getTokenAt(cursor);
-            const len = token && token.string.length >= 2 ? 1 : 0;
+            // We want to trigger hints if we type a word character or dot (for objects/modules)
+            const len = token && (token.string.length >= 1 && /^[a-zA-Z_0-9]+$/.test(token.string)) ? 1 : 0;
             if (len) {
                 hintTimeout = setTimeout(() => {
-                    cm.showHint({ completeSingle: false, hint: CodeMirror.hint.anyword });
+                    cm.showHint({ completeSingle: false, hint: customHint });
                 }, 400);
             }
         });
