@@ -122,18 +122,25 @@ function setupRunCode() {
                 console.log("Execution result:", result);
 
                 if (outputArea) {
+                    const timestamp = new Date().toLocaleTimeString();
+                    const status = response.ok && !result.error ? "SUCCESS" : "ERROR";
+                    const statusColor = status === "SUCCESS" ? "✓" : "✗";
+                    const header = `[${timestamp}] [${status}] ${statusColor}\n`;
+
                     if (response.ok) {
                         if (result.error) {
-                            outputArea.value = `Error:\n${result.stderr || result.message}`;
+                            outputArea.value = `${header}${result.stderr || result.message}`;
                         } else {
-                            outputArea.value = result.stdout;
+                            outputArea.value = `${header}${result.stdout}`;
                             if (result.stderr) {
-                                outputArea.value += `\n--- Stderr ---\n${result.stderr}`;
+                                outputArea.value += `\n--- STDERR ---\n${result.stderr}`;
                             }
                         }
                     } else {
-                        outputArea.value = `Server Error: ${result.error || response.statusText}`;
+                        outputArea.value = `${header}Server Error: ${result.error || response.statusText}`;
                     }
+                    // Auto-scroll to bottom
+                    outputArea.scrollTop = outputArea.scrollHeight;
                 }
 
             } catch (error) {

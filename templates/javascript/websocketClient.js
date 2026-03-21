@@ -153,10 +153,12 @@ function codeboxInit(language, cachedContent) {
     const foldRangeFinder = (typeof CodeMirror !== 'undefined' && CodeMirror.fold) && (isPython && CodeMirror.fold.indent ? CodeMirror.fold.indent : CodeMirror.fold.brace);
 
     // Initialize the CodeMirror editor
+    const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
     currentEditor = CodeMirror.fromTextArea(codeboxElement, {
         lineNumbers: true,
         mode: { name: modeName ?? "text/x-java" },
-        theme: "default",
+        // theme: isDark ? "material-palenight" : "default",
+        theme: "material-palenight",
         indent: 4,
         indentUnit: 4,
         indentWithTabs: false,
@@ -281,8 +283,29 @@ class WebSocketClient {
             } else if (message.type === 'code') {
                 // Update editor content without triggering change event
                 const currentCursor = this.editor.getCursor();
-                this.editor.setValue(message.content);
+                const oldContent = this.editor.getValue();
+                const newContent = message.content;
+                
+                this.editor.setValue(newContent);
                 this.editor.setCursor(currentCursor);
+
+                // Highlight remote changes
+                if (message.user_id !== this.user_id) {
+                    const oldLines = oldContent.split('\n');
+                    const newLines = newContent.split('\n');
+                    
+                    // Simple line-by-line diff to flash changes
+                    newLines.forEach((line, idx) => {
+                        if (line !== oldLines[idx]) {
+                            this.editor.addLineClass(idx, "background", "remote-change-flash-anim");
+                            setTimeout(() => {
+                                if (this.editor) {
+                                    this.editor.removeLineClass(idx, "background", "remote-change-flash-anim");
+                                }
+                            }, 1500);
+                        }
+                    });
+                }
             } else if (message.type === 'sync') {
                 // Set identity from sync message
                 this.user_id = message.user_id;
