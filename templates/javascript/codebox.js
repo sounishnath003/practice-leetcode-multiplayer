@@ -61,17 +61,8 @@ function setupRunCode() {
             setIoPanelOpen(true);
 
             // Access the global currentEditor instance created in websocketClient.js
-            // or try to find the CodeMirror instance on the textarea
-            let editorInstance = currentEditor;
-            if (!editorInstance) {
-                const cmElement = document.querySelector('.CodeMirror');
-                if (cmElement && cmElement.CodeMirror) {
-                    editorInstance = cmElement.CodeMirror;
-                }
-            }
-
-            if (!editorInstance) {
-                console.error("CodeMirror editor instance not found.");
+            if (!currentEditor) {
+                console.error("Monaco editor instance not found.");
                 alert("Editor not initialized. Please refresh the page.");
                 return;
             }
@@ -80,7 +71,7 @@ function setupRunCode() {
             const testcasesArea = document.getElementById('testcases');
             const outputArea = document.getElementById('output');
 
-            let code = editorInstance.getValue();
+            let code = currentEditor.getValue();
             const normalizedCode = code.replace(/\t/g, '    ');
             if (normalizedCode !== code) {
                 code = normalizedCode;

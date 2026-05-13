@@ -98,7 +98,7 @@
             document.body.style.cursor = 'col-resize';
             document.body.style.userSelect = 'none'; // Prevent text selection
             
-            // Disable pointer events on panes to prevent CodeMirror/iframes from stealing mousemove/mouseup
+            // Disable pointer events on panes to prevent Monaco/iframes from stealing mousemove/mouseup
             leftPane.style.pointerEvents = 'none';
             rightPane.style.pointerEvents = 'none';
         });
@@ -131,10 +131,9 @@
                 leftPane.style.pointerEvents = '';
                 rightPane.style.pointerEvents = '';
                 
-                // Refresh CodeMirror so it adapts properly to new container size
-                const cmElement = document.querySelector('.CodeMirror');
-                if (cmElement && cmElement.CodeMirror) {
-                    cmElement.CodeMirror.refresh();
+                // Refresh Monaco so it adapts properly to new container size
+                if (window.currentEditor) {
+                    window.currentEditor.layout();
                 }
             }
         });

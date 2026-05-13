@@ -12,118 +12,21 @@ const languageBoilerplate = {
     default: "// Write your code here...\n// You can select language to get the starter snippet from leetcode...\n// Start typing the 'QuestionSlug: two-sum' from leetcode, to load the question information",
 };
 
-// Language keywords for custom intellisense
-const languageKeywords = {
-    python: [
-        "False", "None", "True", "and", "as", "assert", "async", "await", "break", "class", "continue",
-        "def", "del", "elif", "else", "except", "finally", "for", "from", "global", "if", "import",
-        "in", "is", "lambda", "nonlocal", "not", "or", "pass", "raise", "return", "try", "while", "with", "yield",
-        "abs", "all", "any", "bin", "bool", "bytearray", "bytes", "callable", "chr", "classmethod", "compile",
-        "complex", "delattr", "dict", "dir", "divmod", "enumerate", "eval", "exec", "filter", "float", "format",
-        "frozenset", "getattr", "globals", "hasattr", "hash", "help", "hex", "id", "input", "int", "isinstance",
-        "issubclass", "iter", "len", "list", "locals", "map", "max", "memoryview", "min", "next", "object",
-        "oct", "open", "ord", "pow", "print", "property", "range", "repr", "reversed", "round", "set", "setattr",
-        "slice", "sorted", "staticmethod", "str", "sum", "super", "tuple", "type", "vars", "zip",
-        "math", "os", "sys", "re", "json", "datetime", "collections", "itertools", "functools", "random", "time"
-    ],
-    javascript: [
-        "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete", "do", "else",
-        "export", "extends", "finally", "for", "function", "if", "import", "in", "instanceof", "let", "new",
-        "return", "super", "switch", "this", "throw", "try", "typeof", "var", "void", "while", "with", "yield",
-        "Array", "Boolean", "Date", "Error", "Function", "JSON", "Math", "Number", "Object", "Promise", "RegExp", "String",
-        "console", "document", "window", "setTimeout", "setInterval", "clearTimeout", "clearInterval"
-    ],
-    java: [
-        "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class", "const", "continue",
-        "default", "do", "double", "else", "enum", "extends", "final", "finally", "float", "for", "goto", "if",
-        "implements", "import", "instanceof", "int", "interface", "long", "native", "new", "package", "private",
-        "protected", "public", "return", "short", "static", "strictfp", "super", "switch", "synchronized", "this",
-        "throw", "throws", "transient", "try", "void", "volatile", "while",
-        "String", "Object", "Integer", "Double", "Boolean", "System", "Math", "Thread", "Runnable", "List", "ArrayList",
-        "Map", "HashMap", "Set", "HashSet", "Collections", "Arrays", "Scanner", "out", "println", "print"
-    ],
-    cpp: [
-        "alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand", "bitor", "bool", "break", "case", "catch",
-        "char", "char16_t", "char32_t", "class", "compl", "const", "constexpr", "const_cast", "continue", "decltype",
-        "default", "delete", "do", "double", "dynamic_cast", "else", "enum", "explicit", "export", "extern", "false",
-        "float", "for", "friend", "goto", "if", "inline", "int", "long", "mutable", "namespace", "new", "noexcept",
-        "not", "not_eq", "nullptr", "operator", "or", "or_eq", "private", "protected", "public", "register", "reinterpret_cast",
-        "return", "short", "signed", "sizeof", "static", "static_assert", "static_cast", "struct", "switch", "template",
-        "this", "thread_local", "throw", "true", "try", "typedef", "typeid", "typename", "union", "unsigned", "using",
-        "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq",
-        "std", "cout", "cin", "endl", "string", "vector", "map", "set", "unordered_map", "unordered_set", "list", "deque",
-        "queue", "stack", "algorithm", "sort", "find", "reverse", "printf", "scanf"
-    ]
-};
+let currentEditor = null; // Keep track of the current Monaco editor instance
+let isRemoteUpdate = false; // Flag to prevent infinite sync loops
 
-function customHint(cm, options) {
-    const cursor = cm.getCursor();
-    const token = cm.getTokenAt(cursor);
-    
-    let mode = cm.getMode().name;
-    let langKey = mode === "text/x-java" ? "java" : 
-                  mode === "text/x-c++src" ? "cpp" : 
-                  mode === "python" ? "python" : 
-                  mode === "javascript" ? "javascript" : null;
-
-    let keywords = langKey ? languageKeywords[langKey] : [];
-
-    let start = token.start;
-    let end = cursor.ch;
-    let word = token.string.slice(0, cursor.ch - token.start);
-    
-    if (!/^[a-zA-Z_0-9]+$/.test(word)) {
-        word = "";
-        start = end;
-    }
-    
-    let list = keywords.filter(k => k.toLowerCase().startsWith(word.toLowerCase()));
-
-    let anywordHints = CodeMirror.hint.anyword ? CodeMirror.hint.anyword(cm, options) : {list: []};
-    if (anywordHints && anywordHints.list) {
-        anywordHints.list.forEach(w => {
-            if (!list.includes(w) && w.toLowerCase().startsWith(word.toLowerCase())) {
-                list.push(w);
-            }
-        });
-    }
-
-    list = [...new Set(list)].sort((a, b) => {
-        let aLower = a.toLowerCase();
-        let bLower = b.toLowerCase();
-        let wordLower = word.toLowerCase();
-        let aStarts = aLower.startsWith(wordLower);
-        let bStarts = bLower.startsWith(wordLower);
-        if (aStarts && !bStarts) return -1;
-        if (!aStarts && bStarts) return 1;
-        return a.localeCompare(b);
-    });
-
-    return {
-        list: list,
-        from: CodeMirror.Pos(cursor.line, start),
-        to: CodeMirror.Pos(cursor.line, end)
-    };
-}
-
-let currentEditor = null; // Keep track of the current CodeMirror editor instance
-
-function codeboxInit(language, cachedContent) {
+function codeboxInit(language, cachedContent, callback) {
     const codeboxElement = document.querySelector('#codebox');
-    // Destroy the existing editor instance if it exists
-    if (currentEditor) {
-        currentEditor.toTextArea(); // Restore the original <textarea>
-        currentEditor = null;
-    }
-
+    
     // Normalize language
     language = language?.toLowerCase();
     if (language === 'c++') language = 'cpp';
+    const monacoLang = language === 'java' ? 'java' : (language === 'cpp' ? 'cpp' : language);
 
     // Set the boilerplate code for the selected language
     let boilerplate = languageBoilerplate[language] || languageBoilerplate.default;
 
-    // Check the Selected Language boiler plate
+    // Check the Selected Language boiler plate from hidden snippets if they exist
     let codeEditorSnippet = undefined;
     if (language === 'python') {
         codeEditorSnippet = document.querySelector("#codeSnippetCode #pythonSnippet");
@@ -140,66 +43,56 @@ function codeboxInit(language, cachedContent) {
         if (codeEditorSnippet) boilerplate = codeEditorSnippet.textContent;
     }
 
-    // Use cached content if available, otherwise use boilerplate
-    console.log({cachedContent, boilerplate, language, code: languageBoilerplate[language]});
+    const initialContent = cachedContent !== undefined ? cachedContent : (boilerplate.trim().length == 0 ? languageBoilerplate[language] : boilerplate.trim());
 
-    codeboxElement.value = cachedContent !== undefined ? cachedContent : (boilerplate.trim().length == 0 ? languageBoilerplate[language] : boilerplate.trim());
+    const initMonaco = () => {
+        require(['vs/editor/editor.main'], function() {
+            if (currentEditor) {
+                const model = monaco.editor.createModel(initialContent, monacoLang);
+                currentEditor.setModel(model);
+            } else {
+                currentEditor = monaco.editor.create(codeboxElement, {
+                    value: initialContent,
+                    language: monacoLang,
+                    theme: 'vs-dark',
+                    automaticLayout: true,
+                    fontSize: 14,
+                    lineHeight: 22,
+                    minimap: { enabled: false },
+                    scrollbar: {
+                        vertical: 'visible',
+                        horizontal: 'visible'
+                    },
+                    tabSize: 4,
+                    insertSpaces: true,
+                    suggestOnTriggerCharacters: true,
+                    acceptSuggestionOnEnter: 'on',
+                    folding: true,
+                });
 
-    // If the language is Java, use the "clike" mode
-    const modeName = language === 'java' ? 'text/x-java' : (language === 'cpp' ? 'text/x-c++src' : language);
-    const isPython = language === 'python';
-
-    // Fold: Python uses indent-based folding; others use brace folding
-    const foldRangeFinder = (typeof CodeMirror !== 'undefined' && CodeMirror.fold) && (isPython && CodeMirror.fold.indent ? CodeMirror.fold.indent : CodeMirror.fold.brace);
-
-    // Initialize the CodeMirror editor
-    const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
-    currentEditor = CodeMirror.fromTextArea(codeboxElement, {
-        lineNumbers: true,
-        mode: { name: modeName ?? "text/x-java" },
-        // theme: isDark ? "material-palenight" : "default",
-        theme: "material-palenight",
-        indent: 4,
-        indentUnit: 4,
-        indentWithTabs: false,
-        smartIndent: true,
-        moveOnDrag: true,
-        autoCloseTags: true,
-        autoCloseBrackets: true,
-        lineWrapping: true,
-        matchBrackets: true,
-        foldGutter: true,
-        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
-        foldOptions: foldRangeFinder ? { rangeFinder: foldRangeFinder } : undefined,
-        extraKeys: {
-            'Ctrl-/': 'toggleComment',
-            'Cmd-/': 'toggleComment',
-            'Tab': (cm) => cm.execCommand('insertSoftTab'),
-            'Ctrl-Space': 'autocomplete',
-            'Cmd-Space': 'autocomplete',
-        },
-        hintOptions: {
-            completeSingle: false,
-            hint: customHint,
-        },
-    });
-
-    // Optional: auto-show word completion after typing (delay to avoid flashing)
-    if (currentEditor) {
-        let hintTimeout = null;
-        currentEditor.on('inputRead', (cm, change) => {
-            if (change.origin === 'paste' || change.origin === 'setValue') return;
-            clearTimeout(hintTimeout);
-            const cursor = cm.getCursor();
-            const token = cm.getTokenAt(cursor);
-            // We want to trigger hints if we type a word character or dot (for objects/modules)
-            const len = token && (token.string.length >= 1 && /^[a-zA-Z_0-9]+$/.test(token.string)) ? 1 : 0;
-            if (len) {
-                hintTimeout = setTimeout(() => {
-                    cm.showHint({ completeSingle: false, hint: customHint });
-                }, 400);
+                // Add Cmd+Enter / Ctrl+Enter shortcut to run code
+                currentEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, function() {
+                    const runBtn = document.getElementById('run-code-btn');
+                    if (runBtn) runBtn.click();
+                });
             }
+            
+            if (callback) callback(currentEditor);
         });
+    };
+
+    if (typeof require === 'undefined') {
+        // Wait for loader if called too early (e.g. during HTMX swap)
+        const checkRequire = setInterval(() => {
+            if (typeof require !== 'undefined') {
+                clearInterval(checkRequire);
+                initMonaco();
+            }
+        }, 50);
+        // Timeout after 5 seconds to prevent infinite loop
+        setTimeout(() => clearInterval(checkRequire), 5000);
+    } else {
+        initMonaco();
     }
 
     return currentEditor;
@@ -218,6 +111,7 @@ class WebSocketClient {
         this.notificationContainer = this.createNotificationContainer();
         this.joinedUserElement = document.querySelector('#joinedUser');
         this.webrtcHandler = null;
+        this.remoteDecorations = []; // To track and clear remote change highlights
 
         // Call readiness state
         this.localCallReady = false;
@@ -231,10 +125,10 @@ class WebSocketClient {
 
         // Listen for HTMX swaps to re-attach observer and sync new content
         document.body.addEventListener('htmx:afterSwap', (event) => {
-            // Re-setup observer regardless of target, just to be safe if questionBlock was affected
             this.setupQuestionObserver();
-            // Trigger sync to share the new question details
-            this.#sendCode(this.editor.getValue());
+            if (this.editor) {
+                this.#sendCode(this.editor.getValue());
+            }
         });
 
         this.wss.addEventListener('open', (e) => {
@@ -245,27 +139,22 @@ class WebSocketClient {
             const message = JSON.parse(e.data);
             console.log('Received message:', message);
 
-            // Delegate WebRTC messages to handler
             if (this.webrtcHandler && ['offer', 'answer', 'ice-candidate'].includes(message.type)) {
                 this.webrtcHandler.handleMessage(message);
             }
 
             if (message.type === 'join') {
-                // Add user to room users map
                 this.roomUsers.set(message.user_id, {
                     role: message.role,
                     userId: message.user_id
                 });
                 this.showNotification(`${message.role} joined the room`, 'success');
                 this.updateJoinedUser(message.role);
-                // Initialize WebRTC when a new user joins
                 this.initializeWebRTC();
             } else if (message.type === 'leave') {
-                // Remove user from room users map
                 this.roomUsers.delete(message.user_id);
                 this.showNotification(`${message.role} left the room`, 'warning');
                 this.updateJoinedUser(null);
-                // Disconnect WebRTC when user leaves
                 if (this.webrtcHandler) {
                     this.webrtcHandler.disconnect();
                 }
@@ -278,47 +167,55 @@ class WebSocketClient {
                 this.showNotification(`${message.role} is ready to call!`, 'success');
                 this.checkAutoConnect();
             } else if (message.type === 'call_ended') {
-                this.endCall(false); // End local call without notifying peer back
+                this.endCall(false);
                 this.showNotification(`${message.role} ended the call`, 'info');
             } else if (message.type === 'code') {
-                // Update editor content without triggering change event
-                const currentCursor = this.editor.getCursor();
-                const oldContent = this.editor.getValue();
-                const newContent = message.content;
-                
-                this.editor.setValue(newContent);
-                this.editor.setCursor(currentCursor);
+                if (this.editor && message.user_id !== this.user_id) {
+                    const currentPos = this.editor.getPosition();
+                    const oldContent = this.editor.getValue();
+                    const newContent = message.content;
+                    
+                    isRemoteUpdate = true;
+                    this.editor.setValue(newContent);
+                    if (currentPos) this.editor.setPosition(currentPos);
+                    isRemoteUpdate = false;
 
-                // Highlight remote changes
-                if (message.user_id !== this.user_id) {
+                    // Highlight remote changes using Monaco decorations
                     const oldLines = oldContent.split('\n');
                     const newLines = newContent.split('\n');
+                    const changedLines = [];
                     
-                    // Simple line-by-line diff to flash changes
                     newLines.forEach((line, idx) => {
                         if (line !== oldLines[idx]) {
-                            this.editor.addLineClass(idx, "background", "remote-change-flash-anim");
-                            setTimeout(() => {
-                                if (this.editor) {
-                                    this.editor.removeLineClass(idx, "background", "remote-change-flash-anim");
+                            changedLines.push({
+                                range: new monaco.Range(idx + 1, 1, idx + 1, 1),
+                                options: {
+                                    isWholeLine: true,
+                                    className: 'remote-change-flash-anim'
                                 }
-                            }, 1500);
+                            });
                         }
                     });
+
+                    if (changedLines.length > 0) {
+                        const newDecorations = this.editor.createDecorationsCollection(changedLines);
+                        setTimeout(() => {
+                            newDecorations.clear();
+                        }, 1500);
+                    }
                 }
             } else if (message.type === 'sync') {
-                // Set identity from sync message
                 this.user_id = message.user_id;
                 this.role = message.role;
-
-                // Sync initial state
-                this.initializeWebRTC(); // Ensure WebRTC is ready for late joiners
+                this.initializeWebRTC();
 
                 if (message.language && this.onLanguageChange) {
                     this.onLanguageChange(message.language);
                 }
-                if (message.content) {
+                if (message.content && this.editor) {
+                    isRemoteUpdate = true;
                     this.editor.setValue(message.content);
+                    isRemoteUpdate = false;
                 }
                 if (message.connected_users) {
                     message.connected_users.forEach(u => {
@@ -326,8 +223,6 @@ class WebSocketClient {
                             role: u.role,
                             userId: u.user_id
                         });
-                        // Update UI for each (or just once at end)
-                        // Assuming max 2 users, so opposite role is singular
                         if (u.role !== this.role) {
                             this.updateJoinedUser(u.role);
                         }
@@ -339,17 +234,12 @@ class WebSocketClient {
                 if (message.question_hints) this.updateQuestionHints(message.question_hints);
                 if (message.question_snippets) this.updateQuestionSnippets(message.question_snippets);
             } else if (message.type === 'execution_output') {
-                console.log("Received execution output:", message);
                 const result = message.content;
                 const outputArea = document.getElementById('output');
-
-                // Allow update if it's from another user OR if we want to debug/force it
                 if (outputArea && message.user_id !== this.user_id) {
-                    console.log("Updating output area from remote execution");
                     const runnerRole = message.role || (message.user_id === this.user_id ? "You" : "Peer");
                     const timestamp = new Date().toLocaleTimeString();
                     const header = `--- Run by ${runnerRole} at ${timestamp} ---\n`;
-
                     if (result.error) {
                         outputArea.value = `${header}Error:\n${result.stderr || result.message}`;
                     } else {
@@ -359,12 +249,9 @@ class WebSocketClient {
                         }
                     }
                     this.showNotification(`Remote execution finished`, 'info');
-                } else {
-                    console.log("Skipping execution output update (local user or no output area)");
                 }
             }
 
-            // Granular updates for question details
             if (message.problem_title) this.updateProblemTitle(message.problem_title);
             if (message.problem_description) this.updateProblemDescription(message.problem_description);
             if (message.question_meta) this.updateQuestionMeta(message.question_meta);
@@ -380,32 +267,30 @@ class WebSocketClient {
         });
 
         // Handle editor changes
-        this.editor.on('change', (cm, change) => {
-            if (change.origin !== 'setValue') {
-                const content = cm.getValue();
+        this.setupEditorListeners();
+
+        this.createAudioControls();
+    }
+
+    setupEditorListeners() {
+        if (!this.editor) return;
+        this.editor.onDidChangeModelContent((e) => {
+            if (!isRemoteUpdate) {
+                const content = this.editor.getValue();
                 this.#sendCode(content);
             }
         });
-
-        // Create audio controls
-        this.createAudioControls();
     }
 
     setupQuestionObserver() {
         this.questionBlock = document.getElementById('questionBlock');
         if (this.questionBlock) {
-            // Disconnect existing observer if any
             if (this.observer) this.observer.disconnect();
-
             this.observer = new MutationObserver((mutations) => {
-                // Check if the mutation is relevant to avoid infinite loops
-                // (Though with granular updates, loops are less likely if we check content equality,
-                // but simplicity first: just send if it's a DOM change we didn't cause?
-                // Actually, since we update innerHTML of children, that triggers observer.
-                // We need to temporarily disconnect observer during updates or use a flag.)
-                this.#sendCode(this.editor.getValue());
+                if (this.editor) {
+                    this.#sendCode(this.editor.getValue());
+                }
             });
-
             this.observer.observe(this.questionBlock, {
                 childList: true,
                 subtree: true,
@@ -414,17 +299,9 @@ class WebSocketClient {
         }
     }
 
-    // Flag to prevent observer loops during remote updates
-    isRemoteUpdate = false;
-
     updateEditor(newEditor) {
         this.editor = newEditor;
-        this.editor.on('change', (cm, change) => {
-            if (change.origin !== 'setValue') {
-                const content = cm.getValue();
-                this.#sendCode(content);
-            }
-        });
+        this.setupEditorListeners();
     }
 
     createNotificationContainer() {
@@ -443,24 +320,20 @@ class WebSocketClient {
             error: 'bg-red-500',
             info: 'bg-blue-500'
         };
-
         notification.className = `${baseClasses} ${typeClasses[type] || typeClasses.info}`;
         notification.textContent = message;
-
         this.notificationContainer.appendChild(notification);
-
-        // Animate in
         setTimeout(() => {
             notification.style.opacity = '1';
             notification.style.transform = 'translateX(0)';
         }, 10);
-
-        // Remove after 3 seconds
         setTimeout(() => {
             notification.style.opacity = '0';
             notification.style.transform = 'translateX(100%)';
             setTimeout(() => {
-                this.notificationContainer.removeChild(notification);
+                if (this.notificationContainer.contains(notification)) {
+                    this.notificationContainer.removeChild(notification);
+                }
             }, 300);
         }, 3000);
     }
@@ -478,7 +351,7 @@ class WebSocketClient {
     }
 
     #sendCode(content) {
-        if (this.wss.readyState === WebSocket.OPEN && !this.isRemoteUpdate) {
+        if (this.wss.readyState === WebSocket.OPEN && !isRemoteUpdate) {
             const message = {
                 type: 'code',
                 room_id: this.roomId,
@@ -554,24 +427,21 @@ class WebSocketClient {
         }
     }
 
-    // Helper to pause observer during updates
     withObserverPaused(callback) {
-        this.isRemoteUpdate = true;
+        const wasRemoteUpdate = isRemoteUpdate;
+        isRemoteUpdate = true;
         try {
             callback();
         } finally {
             setTimeout(() => {
-                this.isRemoteUpdate = false;
+                isRemoteUpdate = wasRemoteUpdate;
             }, 0);
         }
     }
 
-
-
     updateJoinedUser(oppositeRole) {
         if (this.joinedUserElement) {
             if (oppositeRole) {
-                // If I am Author, show Collaborator and vice versa
                 const myRole = this.role;
                 const displayRole = myRole === 'Author' ? 'Collaborator' : 'Author';
                 this.joinedUserElement.textContent = `@${displayRole}`;
@@ -584,27 +454,21 @@ class WebSocketClient {
     createAudioControls() {
         const controlsContainer = document.getElementById('callControls');
         if (!controlsContainer) return;
-
-        // Clear any existing controls to avoid duplicates
         controlsContainer.innerHTML = '';
-
         const statusText = document.createElement('div');
         statusText.id = 'callStatus';
         statusText.className = 'hidden text-xs font-medium text-red-600 dark:text-red-400';
         statusText.textContent = '';
-
         const callButton = document.createElement('button');
         callButton.id = 'callButton';
         callButton.className = 'px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 shadow-lg transition-colors text-xs';
         callButton.textContent = 'Start Call';
         callButton.onclick = () => this.handleCallButtonClick();
-
         controlsContainer.appendChild(statusText);
         controlsContainer.appendChild(callButton);
     }
 
     handleCallButtonClick() {
-        // One-shot: allow starting a call only from idle state.
         if (!this.localCallReady && !this.remoteCallReady) {
             this.startCall();
         }
@@ -614,7 +478,6 @@ class WebSocketClient {
         const btn = document.getElementById('callButton');
         const status = document.getElementById('callStatus');
         if (!btn || !status) return;
-
         switch (state) {
             case 'idle':
                 this.stopCallTimer();
@@ -627,7 +490,6 @@ class WebSocketClient {
                 break;
             case 'waiting':
                 this.stopCallTimer();
-                // Hide button while waiting; user cannot cancel/end manually.
                 btn.disabled = true;
                 btn.classList.add('hidden');
                 status.className = 'text-xs font-medium text-red-600 dark:text-red-400';
@@ -635,7 +497,6 @@ class WebSocketClient {
                 status.classList.remove('hidden');
                 break;
             case 'connected':
-                // Keep button hidden; show only status + timer.
                 btn.disabled = true;
                 btn.classList.add('hidden');
                 status.className = 'text-xs font-bold text-red-600 dark:text-red-400';
@@ -649,15 +510,13 @@ class WebSocketClient {
         if (this.callTimerInterval) return;
         const startTime = Date.now();
         const status = document.getElementById('callStatus');
-
         const update = () => {
             const diff = Math.floor((Date.now() - startTime) / 1000);
             const mins = Math.floor(diff / 60).toString().padStart(2, '0');
             const secs = (diff % 60).toString().padStart(2, '0');
             if (status) status.textContent = `● In Call • ${mins}:${secs}`;
         };
-
-        update(); // Initial update
+        update();
         this.callTimerInterval = setInterval(update, 1000);
     }
 
@@ -686,11 +545,8 @@ class WebSocketClient {
             this.showNotification('Waiting for user ID...', 'warning');
             return;
         }
-
         this.localCallReady = true;
         this.updateCallUI('waiting');
-
-        // Notify peer we are ready
         if (this.wss.readyState === WebSocket.OPEN) {
             this.wss.send(JSON.stringify({
                 type: 'call_ready',
@@ -699,7 +555,6 @@ class WebSocketClient {
                 role: this.role
             }));
         }
-
         if (!this.checkAutoConnect()) {
             this.showNotification('Waiting for peer to join call...', 'info');
         }
@@ -718,34 +573,19 @@ class WebSocketClient {
         if (!this.webrtcHandler) {
             await this.initializeWebRTC();
         }
-
-        // Get the opposite role's user ID
         const oppositeRole = this.role === 'Author' ? 'Collaborator' : 'Author';
         const targetUserId = this.getOppositeUserId(oppositeRole);
-
-        console.log('Starting call with:', {
-            myUserId: this.user_id,
-            myRole: this.role,
-            oppositeRole,
-            targetUserId
-        });
-
         if (targetUserId) {
             try {
-                // Determine who initiates based on ID to avoid glare (though handled in webrtc.js too)
-                // Or just both try, and glare logic handles it.
-                // Since both are 'ready', auto-connecting is fine.
                 await this.webrtcHandler.initiateCall(targetUserId);
                 this.showNotification('Connecting audio...', 'success');
             } catch (error) {
                 console.error('Failed to start call:', error);
                 this.showNotification('Failed to start call', 'error');
-                this.updateCallUI('idle'); // Reset on error
+                this.updateCallUI('idle');
                 this.localCallReady = false;
             }
         } else {
-            // Even if we can't find them in the map yet, they might be there.
-            // But getOppositeUserId relies on roomUsers map.
             this.showNotification('Peer not found in room yet', 'warning');
         }
     }
@@ -759,7 +599,6 @@ class WebSocketClient {
                 role: this.role
             }));
         }
-
         this.localCallReady = false;
         this.remoteCallReady = false;
         this.updateCallUI('idle');
@@ -770,18 +609,11 @@ class WebSocketClient {
     }
 
     getOppositeUserId(oppositeRole) {
-        console.log('Current room users:', Array.from(this.roomUsers.entries()));
-        console.log('Looking for role:', oppositeRole);
-
-        // Find the user with the opposite role
         for (const [userId, userData] of this.roomUsers.entries()) {
             if (userData.role === oppositeRole) {
-                console.log('Found opposite user:', userId);
                 return userId;
             }
         }
-
-        console.log('No opposite user found');
         return null;
     }
 }
@@ -790,97 +622,74 @@ function runWebsocketProcess() {
     const roomId = document.querySelector("span#roomId").textContent.trim();
     const languageSelector = document.querySelector('#programmingLanguages');
 
-    // Client-side cache for code per language
     const codeCache = new Map();
     let lastLanguage = 'default';
 
-    // Initialize with the default language
-    let codeEditor = codeboxInit();
-
-    // Callback for remote language changes
-    const onRemoteLanguageChange = (newLanguage) => {
-        const normalizedLanguage = newLanguage.toLowerCase();
-
-        // Save current code before switching
-        if (codeEditor) {
-            codeCache.set(lastLanguage, codeEditor.getValue());
-        }
-
-        if (languageSelector.value.toLowerCase() !== normalizedLanguage) {
-            // Find and select the matching option case-insensitively
-            for (let i = 0; i < languageSelector.options.length; i++) {
-                if (languageSelector.options[i].value.toLowerCase() === normalizedLanguage) {
-                    languageSelector.selectedIndex = i;
-                    break;
-                }
+    // Initialize Monaco
+    codeboxInit(undefined, undefined, (editor) => {
+        // Callback for remote language changes
+        const onRemoteLanguageChange = (newLanguage) => {
+            const normalizedLanguage = newLanguage.toLowerCase();
+            if (editor) {
+                codeCache.set(lastLanguage, editor.getValue());
             }
 
-            // Update tracking and init editor with cached code
-            lastLanguage = normalizedLanguage;
-            codeEditor = codeboxInit(normalizedLanguage, codeCache.get(normalizedLanguage));
-            wss.updateEditor(codeEditor);
-        }
-    };
+            if (languageSelector.value.toLowerCase() !== normalizedLanguage) {
+                for (let i = 0; i < languageSelector.options.length; i++) {
+                    if (languageSelector.options[i].value.toLowerCase() === normalizedLanguage) {
+                        languageSelector.selectedIndex = i;
+                        break;
+                    }
+                }
+                lastLanguage = normalizedLanguage;
+                codeboxInit(normalizedLanguage, codeCache.get(normalizedLanguage), (newEditor) => {
+                    wss.updateEditor(newEditor);
+                });
+            }
+        };
 
-    // Initialize WebSocket connection
-    let wss = new WebSocketClient(roomId, codeEditor, onRemoteLanguageChange);
-    window.wssClient = wss;
+        // Initialize WebSocket connection
+        let wss = new WebSocketClient(roomId, editor, onRemoteLanguageChange);
+        window.wssClient = wss;
 
-    // Listen for HTMX swaps to re-initialize editor with new question boilerplate
-    document.body.addEventListener('htmx:afterSwap', (event) => {
-        // Only trigger if the question block was swapped
-        if (event.target.id === 'questionBlock' || event.detail.target.id === 'questionBlock') {
-            console.log("Question swapped, refreshing editor boilerplate...");
+        // Listen for HTMX swaps
+        document.body.addEventListener('htmx:afterSwap', (event) => {
+            if (event.target.id === 'questionBlock' || event.detail.target.id === 'questionBlock') {
+                codeCache.clear();
+                const currentLang = languageSelector.value.toLowerCase();
+                codeboxInit(currentLang, undefined, (newEditor) => {
+                    lastLanguage = currentLang;
+                    wss.updateEditor(newEditor);
+                });
+            }
+        });
 
-            // Clear cache as we have a new question
-            codeCache.clear();
-
-            // Re-initialize editor with current language to pull new boilerplate from DOM
-            const currentLang = languageSelector.value.toLowerCase();
-            codeEditor = codeboxInit(currentLang);
-
-            // Update tracking
-            lastLanguage = currentLang;
-
-            // Update WebSocket client reference
-            wss.updateEditor(codeEditor);
-        }
-    });
-
-    // Reload the code editor and WebSocket connection when the programming language changes
-    languageSelector.addEventListener('change', (event) => {
-        const selectedLanguage = event.target.value.toLowerCase();
-
-        // Save current code before switching
-        if (codeEditor) {
-            codeCache.set(lastLanguage, codeEditor.getValue());
-        }
-
-        // Notify peers about language change
-        wss.sendLanguageChange(selectedLanguage);
-
-        // Update tracking and reinitialize the editor with cached code or boilerplate
-        lastLanguage = selectedLanguage;
-        codeEditor = codeboxInit(selectedLanguage, codeCache.get(selectedLanguage));
-
-        // Update the editor reference in the WebSocket client
-        wss.updateEditor(codeEditor);
-
-        // Send a sync message to update the code in the room
-        if (wss.wss.readyState === WebSocket.OPEN) {
-            const message = {
-                type: 'code',
-                room_id: roomId,
-                content: codeEditor.getValue(),
-                user_id: wss.user_id,
-                problem_title: wss.getProblemTitle(),
-                problem_description: wss.getProblemDescription(),
-                question_meta: wss.getQuestionMeta(),
-                question_hints: wss.getQuestionHints(),
-                question_snippets: wss.getQuestionSnippets(),
-            };
-            wss.wss.send(JSON.stringify(message));
-        }
+        // Language change listener
+        languageSelector.addEventListener('change', (event) => {
+            const selectedLanguage = event.target.value.toLowerCase();
+            if (editor) {
+                codeCache.set(lastLanguage, editor.getValue());
+            }
+            wss.sendLanguageChange(selectedLanguage);
+            lastLanguage = selectedLanguage;
+            codeboxInit(selectedLanguage, codeCache.get(selectedLanguage), (newEditor) => {
+                wss.updateEditor(newEditor);
+                if (wss.wss.readyState === WebSocket.OPEN) {
+                    const message = {
+                        type: 'code',
+                        room_id: roomId,
+                        content: newEditor.getValue(),
+                        user_id: wss.user_id,
+                        problem_title: wss.getProblemTitle(),
+                        problem_description: wss.getProblemDescription(),
+                        question_meta: wss.getQuestionMeta(),
+                        question_hints: wss.getQuestionHints(),
+                        question_snippets: wss.getQuestionSnippets(),
+                    };
+                    wss.wss.send(JSON.stringify(message));
+                }
+            });
+        });
     });
 }
 

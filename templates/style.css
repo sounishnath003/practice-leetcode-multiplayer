@@ -22,20 +22,6 @@ html,
     font-style: normal;
 }
 
-/* CodeMirror (v5) renders code inside its own DOM; styling the original textarea won't apply. */
-.CodeMirror,
-.CodeMirror pre,
-.CodeMirror textarea,
-.CodeMirror-code,
-.CodeMirror-linenumber {
-    font-family: var(--font-mono) !important;
-}
-
-/* div>.CodeMirror-liness {
-    font-family: url('/static/fonts/droid-sans-mono.ttf'), 'Fira Code, monospace';
-    font-size: 16px;
-} */
-
 /* Hide horizontal scrollbar on question descriptions */
 .text-content pre,
 .text-content code {
