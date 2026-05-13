@@ -166,8 +166,10 @@ def is_allowed_request():
     allowed_domains = [
         "http://localhost:3000",
         "https://practice-leetcode-multiplayer-797087556919.asia-south1.run.app",
+        "https://dsa-revision-webapp-797087556919.asia-south1.run.app",
         # support with/without trailing slash
         "practice-leetcode-multiplayer-797087556919.asia-south1.run.app",
+        "dsa-revision-webapp-797087556919.asia-south1.run.app"
     ]
     origin = flask.request.headers.get("Origin", "").rstrip("/")
     referer = flask.request.headers.get("Referer", "").rstrip("/")
