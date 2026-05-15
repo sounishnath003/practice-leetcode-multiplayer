@@ -17,7 +17,7 @@ let isRemoteUpdate = false; // Flag to prevent infinite sync loops
 
 function codeboxInit(language, cachedContent, callback) {
     const codeboxElement = document.querySelector('#codebox');
-    
+
     // Normalize language
     language = language?.toLowerCase();
     if (language === 'c++') language = 'cpp';
@@ -46,7 +46,7 @@ function codeboxInit(language, cachedContent, callback) {
     const initialContent = cachedContent !== undefined ? cachedContent : (boilerplate.trim().length == 0 ? languageBoilerplate[language] : boilerplate.trim());
 
     const initMonaco = () => {
-        require(['vs/editor/editor.main'], function() {
+        require(['vs/editor/editor.main'], function () {
             if (currentEditor) {
                 const model = monaco.editor.createModel(initialContent, monacoLang);
                 currentEditor.setModel(model);
@@ -56,6 +56,7 @@ function codeboxInit(language, cachedContent, callback) {
                     language: monacoLang,
                     theme: 'vs-dark',
                     automaticLayout: true,
+                    fontFamily: 'var(--font-mono), Consolas, "Courier New", monospace',
                     fontSize: 14,
                     lineHeight: 22,
                     minimap: { enabled: false },
@@ -71,12 +72,12 @@ function codeboxInit(language, cachedContent, callback) {
                 });
 
                 // Add Cmd+Enter / Ctrl+Enter shortcut to run code
-                currentEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, function() {
+                currentEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, function () {
                     const runBtn = document.getElementById('run-code-btn');
                     if (runBtn) runBtn.click();
                 });
             }
-            
+
             if (callback) callback(currentEditor);
         });
     };
@@ -174,7 +175,7 @@ class WebSocketClient {
                     const currentPos = this.editor.getPosition();
                     const oldContent = this.editor.getValue();
                     const newContent = message.content;
-                    
+
                     isRemoteUpdate = true;
                     this.editor.setValue(newContent);
                     if (currentPos) this.editor.setPosition(currentPos);
@@ -184,7 +185,7 @@ class WebSocketClient {
                     const oldLines = oldContent.split('\n');
                     const newLines = newContent.split('\n');
                     const changedLines = [];
-                    
+
                     newLines.forEach((line, idx) => {
                         if (line !== oldLines[idx]) {
                             changedLines.push({
